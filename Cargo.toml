@@ -1,0 +1,14 @@
+[package]
+name = "qeda"
+version = "0.0.1"
+authors = ["Noviga <qeda@noviga.com>"]
+
+edition = '2018'
+
+[dependencies]
+clap = {version = "2.32", features = ["yaml"]}
+
+[[bin]]
+name = "qeda"
+path = "src/core/main.rs"
+test = false # no unit tests
