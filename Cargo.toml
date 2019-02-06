@@ -1,5 +1,6 @@
 [package]
 name = "qeda"
+description = "The tool for easy creating electronic component libraries"
 version = "0.0.1"
 authors = ["Noviga <qeda@noviga.com>"]
 license = "MIT"
