@@ -1,10 +1,15 @@
 #[macro_use]
 extern crate clap;
 
-mod help;
-
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
-use help::*;
+
+const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
+    qeda reset
+    qeda add ti/iso721
+    qeda power +5V_DC
+    qeda ground GND_DC
+    qeda config output=kicad
+    qeda generate mylib";
 
 fn main() {
     let matches = cli().get_matches();
@@ -28,7 +33,7 @@ fn cli() -> App<'static, 'static> {
     App::new("qeda")
         .version(crate_version!())
         .about("A tool for creating libraries of electronic components")
-        .after_help(QEDA_HELP)
+        .after_help(QEDA_EXAMPLES)
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::DeriveDisplayOrder)
         .setting(AppSettings::SubcommandRequiredElseHelp)
