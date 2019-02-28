@@ -1,6 +1,7 @@
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
 
 use crate::errors::*;
+use std::{fs, path::Path};
 
 const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
     qeda reset
@@ -9,6 +10,8 @@ const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
     qeda ground GND_DC
     qeda config output=kicad
     qeda generate mylib";
+
+const QEDA_YML: &'static str = ".qeda.yml";
 
 pub fn run() -> Result<()> {
     let matches = cli().get_matches();
@@ -135,7 +138,13 @@ fn generate(m: &ArgMatches) -> Result<()> {
 }
 
 fn reset() -> Result<()> {
-    println!("reset");
+    info!("removing \"{}\"", QEDA_YML);
+    if !Path::new(QEDA_YML).exists() {
+        warn!("nothing to remove");
+    } else {
+        fs::remove_file(QEDA_YML)
+            .chain_err(|| "unable to remove")?;
+    }
     Ok(())
 }
 
