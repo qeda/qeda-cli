@@ -1,14 +1,15 @@
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
+use std::{fs, path::Path};
 
 use crate::errors::*;
-use std::{fs, path::Path};
+use crate::library::Library;
 
 const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
     qeda reset
-    qeda add ti/iso721
+    qeda add ti:iso721
     qeda power +5V_DC
     qeda ground GND_DC
-    qeda config output=kicad
+    qeda config output kicad
     qeda generate mylib";
 
 const QEDA_YML: &'static str = ".qeda.yml";
@@ -104,11 +105,15 @@ fn cli() -> App<'static, 'static> {
 
 fn add_component(m: &ArgMatches) -> Result<()> {
     println!("add_component -> {}", m.value_of("component").expect(""));
+    debug!("add_component");
+    let lib = Library::new();
+    lib.add_component(m.value_of("component").expect(""))?;
     Ok(())
 }
 
 fn load_component(m: &ArgMatches) -> Result<()> {
-    println!("load_component -> {}", m.value_of("component").expect(""));
+    let lib = Library::new();
+    lib.load_component(m.value_of("component").expect(""))?;
     Ok(())
 }
 
