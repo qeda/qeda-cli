@@ -2,7 +2,9 @@
 
 #[macro_use]
 extern crate clap;
+extern crate crypto_hash;
 extern crate error_chain;
+extern crate hex;
 extern crate termcolor;
 extern crate reqwest;
 
@@ -14,6 +16,10 @@ mod cli;
 mod errors;
 mod library;
 mod component;
+mod drawing;
+mod schematic;
+mod symbols;
+mod utils;
 
 pub use errors::*;
 

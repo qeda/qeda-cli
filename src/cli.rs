@@ -104,41 +104,40 @@ fn cli() -> App<'static, 'static> {
 }
 
 fn add_component(m: &ArgMatches) -> Result<()> {
-    println!("add_component -> {}", m.value_of("component").expect(""));
     debug!("add_component");
     let lib = Library::new();
-    lib.add_component(m.value_of("component").expect(""))?;
+    lib.add_component(m.value_of("component").unwrap())?;
     Ok(())
 }
 
 fn load_component(m: &ArgMatches) -> Result<()> {
     let lib = Library::new();
-    lib.load_component(m.value_of("component").expect(""))?;
+    lib.load_component(m.value_of("component").unwrap())?;
     Ok(())
 }
 
 fn test_component(m: &ArgMatches) -> Result<()> {
-    println!("test_component -> {}", m.value_of("component").expect(""));
+    println!("test_component -> {}", m.value_of("component").unwrap());
     Ok(())
 }
 
 fn add_power(m: &ArgMatches) -> Result<()> {
-    println!("add_power -> {}", m.value_of("net").expect(""));
+    println!("add_power -> {}", m.value_of("net").unwrap());
     Ok(())
 }
 
 fn add_ground(m: &ArgMatches) -> Result<()> {
-    println!("add_ground -> {}", m.value_of("net").expect(""));
+    println!("add_ground -> {}", m.value_of("net").unwrap());
     Ok(())
 }
 
 fn configure(m: &ArgMatches) -> Result<()> {
-    println!("configure -> {}", m.value_of("param").expect(""));
+    println!("configure -> {}", m.value_of("param").unwrap());
     Ok(())
 }
 
 fn generate(m: &ArgMatches) -> Result<()> {
-    println!("generate -> {}", m.value_of("library").expect(""));
+    println!("generate -> {}", m.value_of("library").unwrap());
     Ok(())
 }
 
@@ -159,6 +158,6 @@ fn sort() -> Result<()> {
 }
 
 fn get_completion(m: &ArgMatches) -> Result<()> {
-    println!("get_completion -> {}", m.value_of("shell").expect(""));
+    println!("get_completion -> {}", m.value_of("shell").unwrap());
     Ok(())
 }

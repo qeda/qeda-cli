@@ -1,5 +1,5 @@
 use std::{fs, str, time::Duration};
-use yaml_rust::{YamlLoader};
+use yaml_rust::YamlLoader;
 
 use crate::errors::*;
 use crate::component::Component;
@@ -80,9 +80,9 @@ impl Library {
         let component_yaml = self.get_url_contents(&url).chain_err(|| "component loading failed")?;
 
         info!{"parsing component '{}'", path}
-        let doc = &YamlLoader::load_from_str(&component_yaml)?[0];
-        let component_config = doc.as_hash().ok_or(Error::from(ErrorKind::InvalidYaml))?;
-        Component::validate(component_config)?;
+        let component_config = &YamlLoader::load_from_str(&component_yaml)?[0];
+        let component = Component::from(component_config)?; // Validate config
+        debug!("component short digest: {}", component.digest_short());
 
         let dir: String = QEDALIB_DIR.to_string() + "/" + &path_elems[..path_elems.len()-1].join("/");
         let component_filename = path_elems.last().unwrap().to_string() + YAML_SUFFIX;

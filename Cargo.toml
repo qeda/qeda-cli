@@ -8,7 +8,9 @@ edition = "2018"
 
 [dependencies]
 clap = "2.32"
+crypto-hash = "0.3"
 error-chain = "0.12"
+hex = "0.3"
 reqwest = "0.9"
 termcolor = "1.0"
 yaml-rust = "0.4"
