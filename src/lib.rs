@@ -12,14 +12,19 @@ extern crate reqwest;
 mod log;
 mod cli;
 
+#[macro_use]
+mod macros;
+
 #[allow(deprecated)] // See https://github.com/rust-lang-nursery/error-chain/issues/254
 mod errors;
 mod library;
 mod component;
 mod drawing;
-mod schematic;
-mod symbols;
+mod symbol;
+mod symbol_types;
 mod utils;
+
+pub use yaml_rust::YamlLoader;
 
 pub use errors::*;
 

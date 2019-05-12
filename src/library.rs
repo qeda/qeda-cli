@@ -1,5 +1,5 @@
 use std::{fs, str, time::Duration};
-use yaml_rust::YamlLoader;
+use yaml_rust::{Yaml, YamlLoader};
 
 use crate::errors::*;
 use crate::component::Component;
@@ -8,13 +8,8 @@ const PATH_SEPARATOR: &str = ":";
 const QEDALIB_DIR: &str = "qedalib";
 const YAML_SUFFIX: &str = ".yml";
 
-struct LibraryConfig {
-    base_url: &'static str,
-    timeout_secs: u64
-}
-
 pub struct Library {
-    config: LibraryConfig
+    config: Yaml,
 }
 
 impl Library {
@@ -27,11 +22,13 @@ impl Library {
     /// ```
     pub fn new() -> Library {
         Library {
-            config: LibraryConfig {
-                base_url: "https://raw.githubusercontent.com/qeda/lib/master/",
-                timeout_secs: 5
-            }
+            config: load_yaml!("qeda.yml"),
         }
+    }
+
+    pub fn from(config: &Yaml) -> Result<Library> {
+        let mut result = Library::new();
+        Ok(result)
     }
 
     /// Adds component to library config.
@@ -58,7 +55,7 @@ impl Library {
         let path = path.to_lowercase();
 
         info!("loading component '{}'", path);
-        let mut url = self.config.base_url.to_string();
+        let mut url = self.config["base_url"].as_str().unwrap().to_string();
         if !url.ends_with("/") {
             url += "/";
         }
@@ -99,10 +96,15 @@ impl Library {
 impl Library {
     fn get_url_contents(&self, url: &str) -> Result<String> {
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(self.config.timeout_secs))
+            .timeout(Duration::from_secs(self.config["timeout_secs"].as_i64().unwrap() as u64))
             .build()?;
         
         let mut response = client.get(url).send()?.error_for_status()?;
         Ok(response.text()?)
+    }
+
+    fn merge_config(&mut self, config: &Yaml) -> Result<()>{
+        
+        Ok(())
     }
 }

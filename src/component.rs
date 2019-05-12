@@ -1,23 +1,23 @@
 use yaml_rust::Yaml;
 
 use crate::errors::*;
-use crate::schematic::Schematic;
+use crate::symbol::Symbol;
 use crate::utils;
 
 pub struct Component {
     name: String,
-    schematic: Schematic,
+    symbol: Symbol,
     digest: String,
 }
 
 impl Component {
     pub fn from(config: &Yaml) -> Result<Component> {
         let name = utils::get_yaml_string("name", config)?;
-        let schematic = Schematic::from(config)?;
+        let symbol = Symbol::from(config)?;
         let digest = utils::calc_digest(config);
         Ok(Component {
             name,
-            schematic,
+            symbol,
             digest
         })
     }

@@ -6,6 +6,10 @@ authors = ["Noviga <qeda@noviga.com>"]
 license = "MIT"
 edition = "2018"
 
+[lib]
+name = "qeda"
+path = "src/lib.rs"
+
 [dependencies]
 clap = "2.32"
 crypto-hash = "0.3"
