@@ -19,10 +19,10 @@ mod macros;
 mod errors;
 mod library;
 mod component;
+mod config;
 mod drawing;
 mod symbol;
 mod symbol_types;
-mod utils;
 
 pub use yaml_rust::YamlLoader;
 

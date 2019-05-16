@@ -1,8 +1,6 @@
-use yaml_rust::Yaml;
-
 use crate::errors::*;
+use crate::config::Config;
 use crate::symbol::Symbol;
-use crate::utils;
 
 pub struct Component {
     name: String,
@@ -11,10 +9,10 @@ pub struct Component {
 }
 
 impl Component {
-    pub fn from(config: &Yaml) -> Result<Component> {
-        let name = utils::get_yaml_string("name", config)?;
-        let symbol = Symbol::from(config)?;
-        let digest = utils::calc_digest(config);
+    pub fn from(config: &Config) -> Result<Component> {
+        let name = config.get_string("name")?;
+        let symbol = Symbol::from(&config)?;
+        let digest = config.calc_digest();
         Ok(Component {
             name,
             symbol,

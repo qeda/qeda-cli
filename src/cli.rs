@@ -1,18 +1,21 @@
+use std::fs;
+use std::path::Path;
+
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
-use std::{fs, path::Path};
 
 use crate::errors::*;
+use crate::config::Config;
 use crate::library::Library;
+
+const QEDA_YML: &'static str = ".qeda.yml";
 
 const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
     qeda reset
-    qeda add ti:iso721
+    qeda add ti/iso721
     qeda power +5V_DC
     qeda ground GND_DC
     qeda config output kicad
     qeda generate mylib";
-
-const QEDA_YML: &'static str = ".qeda.yml";
 
 pub fn run() -> Result<()> {
     let matches = cli().get_matches();
@@ -104,9 +107,14 @@ fn cli() -> App<'static, 'static> {
 }
 
 fn add_component(m: &ArgMatches) -> Result<()> {
-    debug!("add_component");
     let lib = Library::new();
-    lib.add_component(m.value_of("component").unwrap())?;
+    let component_id = m.value_of("component").unwrap();
+    lib.add_component(component_id)?;
+
+    Config::create_if_missing(QEDA_YML)?;
+    let mut config = Config::new(QEDA_YML);
+    config.insert_hash_to_hash("components", component_id);
+    config.save(QEDA_YML)?;
     Ok(())
 }
 
@@ -137,12 +145,15 @@ fn configure(m: &ArgMatches) -> Result<()> {
 }
 
 fn generate(m: &ArgMatches) -> Result<()> {
+    if !Path::new(QEDA_YML).exists() {
+        return Err(ErrorKind::MissingConfigFile(QEDA_YML.to_string()).into());
+    }
     println!("generate -> {}", m.value_of("library").unwrap());
     Ok(())
 }
 
 fn reset() -> Result<()> {
-    info!("removing \"{}\"", QEDA_YML);
+    info!("removing '{}'", QEDA_YML);
     if !Path::new(QEDA_YML).exists() {
         warn!("nothing to remove");
     } else {

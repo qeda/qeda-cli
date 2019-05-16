@@ -4,12 +4,23 @@ error_chain! {
     foreign_links {
         Io(std::io::Error);
         Reqwest(reqwest::Error);
-        Yaml(yaml_rust::ScanError);
+        YamlRead(yaml_rust::ScanError);
+        YamlWrite(yaml_rust::EmitError);
     }
 
     errors {
-        InvalidYaml {
-            description("invalid YAML")
+        InvalidConfig {
+            description("invalid config")
+        }
+
+        InvalidConfigFile(name: String) {
+            description("invalid config file")
+            display("invalid config file: '{}'", name)
+        }
+
+        MissingConfigFile(name: String) {
+            description("missing config file")
+            display("missing config file: '{}'", name)
         }
 
         MissingElement(name: String) {

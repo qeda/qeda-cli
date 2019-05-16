@@ -1,15 +1,13 @@
-use yaml_rust::Yaml;
-
 use crate::errors::*;
+use crate::config::Config;
 use crate::drawing::Drawing;
-use crate::utils;
 
 use crate::symbol_types:: {
     capacitor::CapacitorSymbol
 };
 
 pub trait SymbolType {
-    fn draw(&self, config: &Yaml) -> Result<Drawing>;
+    fn draw(&self, config: &Config) -> Result<Drawing>;
 }
 
 pub struct Symbol {
@@ -18,8 +16,8 @@ pub struct Symbol {
 }
 
 impl Symbol {
-    pub fn from(config: &Yaml) -> Result<Symbol>{
-        let symbol_type = utils::get_yaml_string("symbol.type", config)?;
+    pub fn from(config: &Config) -> Result<Symbol>{
+        let symbol_type = config.get_string("symbol.type")?;
         let symbol_type = match symbol_type.as_str() {
             "capacitor" => Box::new(CapacitorSymbol{ }),
             _ => return Err(ErrorKind::InvalidSymbolType(symbol_type).into()),
