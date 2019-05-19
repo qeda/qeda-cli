@@ -15,18 +15,18 @@ mod cli;
 #[macro_use]
 mod macros;
 
+pub mod library;
+pub mod config;
+pub mod drawing;
+
 #[allow(deprecated)] // See https://github.com/rust-lang-nursery/error-chain/issues/254
 mod errors;
-mod library;
 mod component;
-mod config;
-mod drawing;
 mod symbol;
-mod symbol_types;
+mod pattern;
+mod generator;
 
-pub use yaml_rust::YamlLoader;
-
-pub use errors::*;
+pub use errors::Result;
 
 pub fn run_cli() -> Result<()> {
     cli::run()

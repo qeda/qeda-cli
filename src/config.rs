@@ -8,6 +8,7 @@ use yaml_rust::{yaml, Yaml, YamlLoader, YamlEmitter};
 
 use crate::errors::*;
 
+#[derive(Debug)]
 pub struct Config {
     yaml: Yaml,
 }
@@ -31,7 +32,7 @@ impl Config {
         }
     }
 
-    pub fn from(path: &str) -> Result<Config> {
+    pub fn from_file(path: &str) -> Result<Config> {
         Self::from_str(&fs::read_to_string(path)?)
     }
 
@@ -66,6 +67,13 @@ impl Config {
         }
     }
 
+    pub fn get_hash(&self, key: &str)-> Result<&yaml::Hash> {
+        Ok(self.get_element(key)?
+            .as_hash()
+            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "hash".to_string()))?
+        )
+    }
+
     pub fn get_string(&self, key: &str)-> Result<String> {
         Ok(self.get_element(key)?
             .as_str()
@@ -77,7 +85,7 @@ impl Config {
     pub fn get_u64(&self, key: &str)-> Result<u64> {
         Ok(self.get_element(key)?
             .as_i64()
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "string".to_string()))?
+            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "integer".to_string()))?
             as u64
         )
     }
@@ -134,11 +142,12 @@ impl Config {
         hex::encode(hasher.finish())
     }
 
-    pub fn merge_with(&mut self, from: &Config) {
+    pub fn merge_with(&mut self, _from: &Config) {
 
     }
 }
 
+// Private methods
 impl Config {
     fn yaml_into_hash(&self) -> yaml::Hash {
         // Need to clone as there is no Yaml::as_hash_mut()

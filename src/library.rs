@@ -6,33 +6,61 @@ use std::time::Duration;
 use crate::errors::*;
 use crate::component::Component;
 use crate::config::Config;
+use crate::generator::Generator;
 
 const ID_SEPARATOR: &str = "/";
 const QEDALIB_DIR: &str = "qedalib";
 const YAML_SUFFIX: &str = ".yml";
 
+#[derive(Debug)]
 pub struct Library {
     config: Config,
+    components: Vec<Component>,
 }
 
 impl Library {
-    /// Creates an epmty component library.
+    /// Creates an empty component library.
     /// 
     /// # Examples
     /// 
     /// ```
+    /// use qeda::library::Library;
+    /// 
     /// let lib = Library::new();
     /// ```
     pub fn new() -> Library {
         Library {
             config: load_config!("qeda.yml"),
+            components: Vec::new(),
         }
     }
 
-    pub fn from(config: &Config) -> Result<Library> {
-        let mut result = Library::new();
-        result.merge_congig_with(config);
-        Ok(result)
+    // Creates a component library from config.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use qeda::config::Config;
+    /// use qeda::library::Library;
+    /// 
+    /// let yaml = "
+    /// components:
+    ///   capacitor/c0603: {} 
+    /// ";
+    /// let config = Config::from_str(yaml).unwrap();
+    /// let lib = Library::from_config(&config).unwrap();
+    /// 
+    /// assert_eq!(lib.components().len(), 1);
+    /// ```
+    pub fn from_config(config: &Config) -> Result<Library> {
+        let mut lib = Library::new();
+        lib.merge_config_with(config);
+        let components_hash = config.get_hash("components")?;
+        let keys = components_hash.keys();
+        for key in keys {
+            lib.add_component(key.as_str().unwrap())?;
+        }
+        Ok(lib)
     }
 
     /// Adds component to library config.
@@ -40,20 +68,25 @@ impl Library {
     /// # Examples
     /// 
     /// ```
-    /// let lib = Library::new();
-    /// lib.add_component("capacitor:c0603")?;
+    /// use qeda::library::Library;
+    /// 
+    /// let mut lib = Library::new();
+    /// lib.add_component("capacitor/c0603").unwrap();
+    /// 
+    /// assert_eq!(lib.components().len(), 1);
     /// ```
-    pub fn add_component(&self, id: &str) -> Result<()> {
+    pub fn add_component(&mut self, id: &str) -> Result<()> {
         let id = id.to_lowercase();
 
         info!("adding component '{}'", id);
         let component_path = self.local_path(&id);
-        if !Path::new(&component_path).exists() {
-            self.load_component(&id)?;
+        let compoment = if !Path::new(&component_path).exists() {
+            self.load_component(&id)?
         } else {
             let component_yaml = fs::read_to_string(component_path)?;
-            self.parse_component(&id, &component_yaml)?;
-        }
+            self.parse_component(&id, &component_yaml)?
+        };
+        self.components.push(compoment);
         Ok(())
     }
 
@@ -62,10 +95,12 @@ impl Library {
     /// # Examples
     /// 
     /// ```
+    /// use qeda::library::Library;
+    /// 
     /// let lib = Library::new();
-    /// lib.load_component("capacitor:c0603")?;
+    /// lib.load_component("capacitor/c0603").unwrap();
     /// ```
-    pub fn load_component(&self, id: &str) -> Result<()> {
+    pub fn load_component(&self, id: &str) -> Result<Component> {
         let id = id.to_lowercase();
 
         info!("loading component '{}'", id);
@@ -80,7 +115,7 @@ impl Library {
         url += &self.file_path(&id);
         debug!("URL: {}", url);
         let component_yaml = self.get_url_contents(&url).chain_err(|| "component loading failed")?;
-        self.parse_component(&id, &component_yaml)?;
+        let component = self.parse_component(&id, &component_yaml)?;
 
         let dir = self.local_dir(&id);
         fs::create_dir_all(&dir)?;
@@ -88,6 +123,24 @@ impl Library {
         debug!("path: {}", component_path);
         fs::write(component_path, component_yaml)?;
                 
+        Ok(component)
+    }
+
+    /// Returns components array.
+    pub fn components(&self) -> &Vec<Component> {
+        &self.components
+    }
+
+    /// Returns library config.
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    /// Generates library for using in EDA.
+    pub fn generate(&self, name: &str) -> Result<()> {
+        let handler = self.config.get_string("generator.handler")?;
+        let generator = Generator::new();
+        generator.handler(&handler)?.render(name, self)?;
         Ok(())
     }
 }
@@ -124,14 +177,6 @@ impl Library {
         QEDALIB_DIR.to_string() + "/" + &self.file_path(&id)
     }
 
-    fn parse_component(&self, id: &str, yaml: &str) -> Result<()> {
-        info!("parsing component '{}'", id);
-        let config = Config::from_str(yaml)?;
-        let component = Component::from(&config)?; // Validate config
-        debug!("component short digest: {}", component.digest_short());
-        Ok(())
-    }
-
     fn manufacturer(&self, id: &str) -> Option<String> {
         let path_elems: Vec<&str> = id.split(ID_SEPARATOR).collect();
         if path_elems.len() > 1 {
@@ -141,7 +186,15 @@ impl Library {
         }
     }
 
-    fn merge_congig_with(&mut self, config: &Config) {
+    fn merge_config_with(&mut self, config: &Config) {
         self.config.merge_with(config);
+    }
+
+    fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
+        info!("parsing component '{}'", id);
+        let config = Config::from_str(yaml)?;
+        let component = Component::from_config(&config)?; // Validate config
+        debug!("component short digest: {}", component.digest_short());
+        Ok(component)
     }
 }

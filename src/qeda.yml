@@ -1,2 +1,5 @@
 base_url: https://raw.githubusercontent.com/qeda/lib/master/
 timeout_secs: 5
+
+generator:
+  handler: kicad

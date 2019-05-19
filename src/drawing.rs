@@ -1,8 +1,18 @@
-pub trait DrawingElement {
+use std::fmt::{self, Debug};
+
+#[derive(Debug)]
+pub enum  Element {
+    Line {
+        x0: i32,
+        y0: i32,
+        x1: i32,
+        y1: i32,
+    },
 }
 
+#[derive(Debug)]
 pub struct Drawing {
-    elements: Vec<Box<dyn DrawingElement>>,
+    elements: Vec<Element>,
 }
 
 impl Drawing {
@@ -12,24 +22,17 @@ impl Drawing {
         }
     }
 
+    pub fn elements(&self) -> &Vec<Element> {
+        &self.elements 
+    }
+
     pub fn add_line(&mut self, x0: i32, y0: i32, x1: i32, y1: i32) {
-        let line = Line {
+        let line = Element::Line {
             x0,
             y0,
             x1,
             y1,
         };
-        self.elements.push(Box::new(line));
+        self.elements.push(line);
     }
-}
-
-pub struct Line {
-    x0: i32,
-    y0: i32,
-    x1: i32,
-    y1: i32,
-}
-
-impl DrawingElement for Line {
-
 }

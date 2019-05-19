@@ -107,7 +107,7 @@ fn cli() -> App<'static, 'static> {
 }
 
 fn add_component(m: &ArgMatches) -> Result<()> {
-    let lib = Library::new();
+    let mut lib = Library::new();
     let component_id = m.value_of("component").unwrap();
     lib.add_component(component_id)?;
 
@@ -148,7 +148,8 @@ fn generate(m: &ArgMatches) -> Result<()> {
     if !Path::new(QEDA_YML).exists() {
         return Err(ErrorKind::MissingConfigFile(QEDA_YML.to_string()).into());
     }
-    println!("generate -> {}", m.value_of("library").unwrap());
+    let lib = Library::from_config(&Config::from_file(QEDA_YML)?)?;
+    lib.generate(m.value_of("library").unwrap())?;
     Ok(())
 }
 
