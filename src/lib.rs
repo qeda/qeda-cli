@@ -22,9 +22,9 @@ pub mod drawing;
 #[allow(deprecated)] // See https://github.com/rust-lang-nursery/error-chain/issues/254
 mod errors;
 mod component;
-mod symbol;
-mod pattern;
-mod generator;
+mod symbols;
+mod patterns;
+mod generators;
 
 pub use errors::Result;
 

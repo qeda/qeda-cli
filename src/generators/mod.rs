@@ -10,21 +10,21 @@ pub trait GeneratorHandler {
     fn render(&self, name: &str, library: &Library) -> Result<()>;
 }
 
-pub struct Generator<'a> {
+pub struct Generators<'a> {
     handlers: HashMap<&'a str, Box<dyn GeneratorHandler>>,
 }
 
-impl<'a> Generator<'a> {
-    pub fn new() -> Generator<'a> {
+impl<'a> Generators<'a> {
+    pub fn new() -> Generators<'a> {
         let mut handlers: HashMap<&'a str, Box<dyn GeneratorHandler>> = HashMap::new();
         handlers.insert("kicad", Box::new(KicadGenerator::new()));
 
-        Generator {
+        Generators {
             handlers,
         }
     }
 
-    pub fn handler(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
+    pub fn get(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
         self.handlers.get(key).ok_or(ErrorKind::InvalidGeneratorHandler(key.to_string()).into())
     }
 }

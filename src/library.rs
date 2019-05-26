@@ -4,21 +4,26 @@ use std::str;
 use std::time::Duration;
 
 use crate::errors::*;
-use crate::component::Component;
 use crate::config::Config;
-use crate::generator::Generator;
+use crate::symbols::Symbols;
+use crate::patterns::Patterns;
+use crate::component::Component;
+use crate::generators::Generators;
+
 
 const ID_SEPARATOR: &str = "/";
 const QEDALIB_DIR: &str = "qedalib";
 const YAML_SUFFIX: &str = ".yml";
 
 #[derive(Debug)]
-pub struct Library {
+pub struct Library<'a> {
     config: Config,
+    symbols: Symbols<'a>,
+    patterns: Patterns<'a>,
     components: Vec<Component>,
 }
 
-impl Library {
+impl<'a> Library<'a> {
     /// Creates an empty component library.
     /// 
     /// # Examples
@@ -28,9 +33,11 @@ impl Library {
     /// 
     /// let lib = Library::new();
     /// ```
-    pub fn new() -> Library {
+    pub fn new() -> Library<'a> {
         Library {
             config: load_config!("qeda.yml"),
+            symbols: Symbols::new(),
+            patterns: Patterns::new(),
             components: Vec::new(),
         }
     }
@@ -139,14 +146,14 @@ impl Library {
     /// Generates library for using in EDA.
     pub fn generate(&self, name: &str) -> Result<()> {
         let handler = self.config.get_string("generator.handler")?;
-        let generator = Generator::new();
-        generator.handler(&handler)?.render(name, self)?;
+        let generators = Generators::new();
+        generators.get(&handler)?.render(name, self)?;
         Ok(())
     }
 }
 
 // Private methods
-impl Library {
+impl<'a> Library<'a> {
     fn get_url_contents(&self, url: &str) -> Result<String> {
         let client = reqwest::Client::builder()
             //.timeout(Duration::from_secs(self.config.get_u64("timeout_secs")?["timeout_secs"].as_i64().unwrap() as u64))
@@ -193,7 +200,7 @@ impl Library {
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
         let config = Config::from_str(yaml)?;
-        let component = Component::from_config(&config)?; // Validate config
+        let component = Component::from_config(&config, &self.symbols, &self.patterns)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)
     }

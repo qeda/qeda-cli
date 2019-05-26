@@ -148,7 +148,8 @@ fn generate(m: &ArgMatches) -> Result<()> {
     if !Path::new(QEDA_YML).exists() {
         return Err(ErrorKind::MissingConfigFile(QEDA_YML.to_string()).into());
     }
-    let lib = Library::from_config(&Config::from_file(QEDA_YML)?)?;
+    let config = Config::from_file(QEDA_YML)?;
+    let lib = Library::from_config(&config)?;
     lib.generate(m.value_of("library").unwrap())?;
     Ok(())
 }

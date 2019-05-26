@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::library::Library;
-use crate::generator::GeneratorHandler;
+use crate::generators::GeneratorHandler;
 use crate::drawing::Element;
 
 pub struct KicadGenerator {}

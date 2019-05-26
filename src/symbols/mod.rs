@@ -20,26 +20,21 @@ impl Debug for SymbolHandler {
 }
 
 #[derive(Debug)]
-pub struct Symbol<'a> {
+pub struct Symbols<'a> {
     handlers: HashMap<&'a str, Box<dyn SymbolHandler>>,
 }
 
-impl<'a> Symbol<'a> {
-    pub fn new() -> Symbol<'a> {
+impl<'a> Symbols<'a> {
+    pub fn new() -> Symbols<'a> {
         let mut handlers: HashMap<&'a str, Box<dyn SymbolHandler>> = HashMap::new();
         handlers.insert("capacitor", Box::new(CapacitorSymbol::new()));
 
-        Symbol {
+        Symbols {
             handlers,
         }
     }
 
-    pub fn handler(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
+    pub fn get(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
         self.handlers.get(key).ok_or(ErrorKind::InvalidSymbolHandler(key.to_string()).into())
-    }
-
-    pub fn draw(&self, config: &Config) -> Result<Drawing> {
-        let symbol_handler = &config.get_string("symbol.handler")?;
-        self.handler(&symbol_handler)?.draw(config)
     }
 }
