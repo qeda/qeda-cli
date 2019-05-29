@@ -4,6 +4,7 @@ error_chain! {
     foreign_links {
         Io(std::io::Error);
         Reqwest(reqwest::Error);
+        Svg(svgdom::ParserError);
         YamlRead(yaml_rust::ScanError);
         YamlWrite(yaml_rust::EmitError);
     }

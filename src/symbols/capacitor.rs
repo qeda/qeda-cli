@@ -14,8 +14,6 @@ impl CapacitorSymbol {
 impl SymbolHandler for CapacitorSymbol {
     fn draw(&self, _config: &Config)-> Result<Drawing> {
         debug!("draw capacitor symbol");
-        let mut drawing = Drawing::new();
-        drawing.add_line(1, 2, 3, 4);
-        Ok(drawing)
+        Drawing::from_svg(include_str!("capacitor.svg"))
     } 
 }

@@ -20,15 +20,15 @@ impl GeneratorHandler for KicadGenerator {
 }
 
 impl KicadGenerator {
-    fn render_symbols(&self, name: &str, library: &Library) -> Result<()> {
+    fn render_symbols(&self, _name: &str, library: &Library) -> Result<()> {
         let components = library.components();
         for component in components {
             let symbol = component.symbol();
             let elements = symbol.elements();
             for element in elements {
                 match element {
-                    Element::Line {x0, y0, x1, y1} => {
-                        println!("Line: {}, {}, {}, {}", x0, y0, x1, y1);
+                    Element::Line(l) => {
+                        println!("Line: {}, {}, {}, {}", l.points.0.x, l.points.0.y, l.points.1.x, l.points.1.y);
                     },
                     _ => {},
                 }
