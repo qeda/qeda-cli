@@ -34,7 +34,7 @@ impl<'a> Symbols<'a> {
         }
     }
 
-    pub fn get(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
+    pub fn get_handler(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
         self.handlers.get(key).ok_or(ErrorKind::InvalidSymbolHandler(key.to_string()).into())
     }
 }

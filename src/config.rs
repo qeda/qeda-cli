@@ -175,7 +175,7 @@ impl Config {
                 }
             },
             Yaml::Alias(u) => hasher.write_all(&u.to_le_bytes()).unwrap(),
-            _ => {},
+            _ => (),
         }
     }
 }

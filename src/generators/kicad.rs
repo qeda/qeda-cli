@@ -30,7 +30,7 @@ impl KicadGenerator {
                     Element::Line(l) => {
                         println!("Line: {}, {}, {}, {}", l.points.0.x, l.points.0.y, l.points.1.x, l.points.1.y);
                     },
-                    _ => {},
+                    _ => (),
                 }
             }
         }
