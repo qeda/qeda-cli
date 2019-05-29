@@ -15,7 +15,7 @@ impl PatternHandler for ChipPattern {
     fn draw(&self, _config: &Config)-> Result<Drawing> {
         debug!("draw chip pattern");
         let mut drawing = Drawing::new();
-        drawing.add_line(0, 0, 0, 0);
+        drawing.add_line(0.0, 1.0, 2.0, 3.0);
         Ok(drawing)
     } 
 }
