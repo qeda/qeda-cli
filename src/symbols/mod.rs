@@ -14,7 +14,7 @@ pub trait SymbolHandler {
 }
 
 impl Debug for SymbolHandler {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SymbolHandler")
     }
 }
