@@ -1,14 +1,6 @@
 #![recursion_limit = "1024"]
 
 #[macro_use]
-extern crate clap;
-extern crate crypto_hash;
-extern crate error_chain;
-extern crate hex;
-extern crate termcolor;
-extern crate reqwest;
-
-#[macro_use]
 mod log;
 mod cli;
 
