@@ -17,6 +17,7 @@ mod component;
 mod symbols;
 mod patterns;
 mod generators;
+mod svg;
 
 pub use errors::Result;
 

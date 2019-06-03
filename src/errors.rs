@@ -48,5 +48,9 @@ error_chain! {
             description("invalid generator handler")
             display("invalid generator handler: '{}'", handler)
         }
+
+        InvalidSvgPath {
+            description("invalid SVG path")
+        }
     }
 }

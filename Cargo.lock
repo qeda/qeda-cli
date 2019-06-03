@@ -793,6 +793,7 @@ dependencies = [
  "crypto-hash 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "svgdom 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "termcolor 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
