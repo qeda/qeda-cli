@@ -12,7 +12,7 @@ pub struct SvgPoint {
 
 #[derive(Debug)]
 pub struct SvgLine {
-    points: (SvgPoint, SvgPoint),
+    p: (SvgPoint, SvgPoint),
     width: f64,
 }
 
@@ -34,7 +34,7 @@ pub struct SvgVLine {
 
 #[derive(Default, Debug)]
 pub struct SvgPolygon {
-    points: Vec<SvgPoint>,
+    p: Vec<SvgPoint>,
     width: f64,
 }
 
@@ -67,26 +67,26 @@ impl Svg {
                 ElementId::Path => {
                     let path_id = node.id().to_string();
                     let polygon = self.to_polygon(&node.attributes())?;
-                    if polygon.points.len() == 2 {
-                        if polygon.points[0].y == polygon.points[1].y {
+                    if polygon.p.len() == 2 {
+                        if polygon.p[0].y == polygon.p[1].y {
                             let line = SvgHLine {
-                                x0: polygon.points[0].x,
-                                x1: polygon.points[1].x,
-                                y: polygon.points[0].y,
+                                x0: polygon.p[0].x,
+                                x1: polygon.p[1].x,
+                                y: polygon.p[0].y,
                                 width: polygon.width,
                             };
                             self.elements.insert(path_id, SvgElement::HLine(line));
-                        } else if polygon.points[0].x == polygon.points[1].x {
+                        } else if polygon.p[0].x == polygon.p[1].x {
                             let line = SvgVLine {
-                                x: polygon.points[0].x,
-                                y0: polygon.points[0].y,
-                                y1: polygon.points[1].y,
+                                x: polygon.p[0].x,
+                                y0: polygon.p[0].y,
+                                y1: polygon.p[1].y,
                                 width: polygon.width,
                             };
                             self.elements.insert(path_id, SvgElement::VLine(line));
                         } else {
                             let line = SvgLine {
-                                points: (polygon.points[0].clone(), polygon.points[1].clone()),
+                                p: (polygon.p[0].clone(), polygon.p[1].clone()),
                                 width: polygon.width,
                             };
                             self.elements.insert(path_id, SvgElement::Line(line));
@@ -124,7 +124,7 @@ impl Svg {
                                         }
                                         self.current_x = x;
                                         self.current_y = y;
-                                        polygon.points.push(SvgPoint { x, y, marker: false });
+                                        polygon.p.push(SvgPoint { x, y, marker: false });
                                     },
                                     PathSegment::HorizontalLineTo { abs, x } => {
                                         let mut x = *x;
@@ -133,7 +133,7 @@ impl Svg {
                                             x += self.current_x;
                                         }
                                         self.current_x = x;
-                                        polygon.points.push(SvgPoint { x, y, marker: false });
+                                        polygon.p.push(SvgPoint { x, y, marker: false });
                                     },
                                     PathSegment::VerticalLineTo { abs, y } => {
                                         let x = self.current_x;
@@ -142,7 +142,7 @@ impl Svg {
                                             y += self.current_y;
                                         }
                                         self.current_y = y;
-                                        polygon.points.push(SvgPoint { x, y, marker: false });
+                                        polygon.p.push(SvgPoint { x, y, marker: false });
                                     },
                                     _ => (),  
                                 }

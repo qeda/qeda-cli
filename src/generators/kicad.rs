@@ -28,7 +28,7 @@ impl KicadGenerator {
             for element in elements {
                 match element {
                     Element::Line(l) => {
-                        println!("Line: {}, {}, {}, {}", l.points.0.x, l.points.0.y, l.points.1.x, l.points.1.y);
+                        println!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
                     },
                     _ => (),
                 }
