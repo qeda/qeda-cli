@@ -12,30 +12,50 @@ pub struct SvgPoint {
 
 #[derive(Debug)]
 pub struct SvgLine {
-    p: (SvgPoint, SvgPoint),
-    width: f64,
+    pub p: (SvgPoint, SvgPoint),
+    pub width: f64,
 }
 
 #[derive(Default, Debug)]
 pub struct SvgHLine {
-    x0: f64,
-    x1: f64,
-    y: f64,
-    width: f64,
+    pub x0: f64,
+    pub x1: f64,
+    pub y: f64,
+    pub width: f64,
+}
+
+impl SvgHLine {
+    pub fn cx(&self) -> f64 {
+        (self.x0 + self.x1) / 2.0
+    }
+
+    pub fn len(&self) -> f64 {
+        (self.x1 - self.x0).abs()
+    }
 }
 
 #[derive(Default, Debug)]
 pub struct SvgVLine {
-    x: f64,
-    y0: f64,
-    y1: f64,
-    width: f64,
+    pub x: f64,
+    pub y0: f64,
+    pub y1: f64,
+    pub width: f64,
+}
+
+impl SvgVLine {
+    pub fn cy(&self) -> f64 {
+        (self.y0 + self.y1) / 2.0
+    }
+
+    pub fn len(&self) -> f64 {
+        (self.y1 - self.y0).abs()
+    }
 }
 
 #[derive(Default, Debug)]
 pub struct SvgPolygon {
-    p: Vec<SvgPoint>,
-    width: f64,
+    pub p: Vec<SvgPoint>,
+    pub width: f64,
 }
 
 #[derive(Debug)]

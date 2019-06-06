@@ -16,6 +16,7 @@ mod errors;
 mod component;
 mod symbols;
 mod patterns;
+mod geometry;
 mod generators;
 mod svg;
 

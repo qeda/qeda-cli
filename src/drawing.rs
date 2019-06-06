@@ -1,70 +1,24 @@
-use nalgebra::{Point2, Transform2};
-
 use crate::errors::*;
+use crate::geometry::*;
 use crate::svg::{self, *};
-
-type TransformMatrix = Transform2<f64>;
-
-pub trait Transform {
-    fn transform(&mut self, matrix: &TransformMatrix);
-}
 
 #[derive(Debug)]
 pub enum Element {
     Line(Line),
 }
 
-#[derive(Default, Debug)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Transform for Point {
-    fn transform(&mut self, matrix: &TransformMatrix) {
-        let p = Point2::new(self.x, self.y);
-        let p = matrix.transform_point(&p);
-        self.x = p.x;
-        self.y = p.y;
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct Line {
-    pub p: (Point, Point)
-}
-
-impl Transform for Line {
-    fn transform(&mut self, matrix: &TransformMatrix) {
-        self.p.0.transform(matrix);
-        self.p.1.transform(matrix);
-    }
-}
-
 #[derive(Debug)]
 pub struct Drawing {
-    canvas_transform: TransformMatrix,
+    canvas_transform: Transformation,
     elements: Vec<Element>,
 }
 
 impl Drawing {
     pub fn new() -> Drawing {
         Drawing {
-            canvas_transform: TransformMatrix::identity(),
+            canvas_transform: Transformation::new(),
             elements: Vec::new(),
         }
-    }
-
-    pub fn translate_canvas(&mut self, dx: f64, dy: f64) {
-        // TODO: Modify canvas_transform
-    }
-
-    pub fn rotate_canvas(&mut self, angle: f64) {
-        // TODO: Modify canvas_transform
-    }
-
-    pub fn scale_canvas(&mut self, sx: f64, sy: f64) {
-        // TODO: Modify canvas_transform
     }
 
     pub fn from_svg(svg: &str) -> Result<Drawing> {
@@ -75,13 +29,30 @@ impl Drawing {
 
     pub fn add_svg(&mut self, svg: &str) -> Result<()> {
         let mut elements = svg::to_elements(svg)?;
+        let mut sx = 1.0;
+        let mut sy = 1.0;
+        let mut dx = 0.0;
+        let mut dy = 0.0;
         if let Some(SvgElement::HLine(ch)) = elements.remove("ch") {
-            dbg!(ch);
+            sx = 1.0/ch.len();
+            dx = -ch.cx();
         }
         if let Some(SvgElement::VLine(cv)) = elements.remove("cv") {
-            dbg!(cv);
+            sy = 1.0/cv.len();
+            dy = -cv.cy();
         }
+        self.canvas_transform.scale(sx, sy);
+        self.canvas_transform.translate(dx, dy);
+
         dbg!(&elements);
+        for (_, element) in elements {
+            match element {
+                SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y),
+                SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1),
+                _ => ()
+            }
+        }
+        dbg!(&self.elements());
         Ok(())
     }
 
@@ -90,8 +61,10 @@ impl Drawing {
     }
 
     pub fn add_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64) {
-        let p0 = Point { x: x0, y: y0 };
-        let p1 = Point { x: x1, y: y1 };
+        let mut p0 = Point { x: x0, y: y0 };
+        self.canvas_transform.transform(&mut p0);
+        let mut p1 = Point { x: x1, y: y1 };
+        self.canvas_transform.transform(&mut p1);
         let line = Line { p: (p0, p1) };
         self.elements.push(Element::Line(line));
     }
