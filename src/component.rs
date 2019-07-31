@@ -15,9 +15,9 @@ pub struct Component {
 impl Component {
     pub fn from_config(config: &Config, symbols: &Symbols, patterns: &Patterns) -> Result<Component> {
         let name = config.get_string("name")?;
-        let symbol_handler = symbols.get_handler(&config.get_string("symbol.handler")?)?;
+        let symbol_handler = symbols.get_handler(&config.get_string("symbol.type")?)?;
         let symbol = symbol_handler.draw(&config)?;
-        let pattern_handler = patterns.get_handler(&config.get_string("pattern.handler")?)?;
+        let pattern_handler = patterns.get_handler(&config.get_string("pattern.type")?)?;
         let pattern = pattern_handler.draw(&config)?;
         let digest = config.calc_digest();
         Ok(Component {
