@@ -11,7 +11,15 @@ Ubuntu
 
 Prerequisites::
 
-    sudo apt install libssl-dev
+    sudo apt install -y pkgconf libssl-dev
+
+Build::
+
+    cargo build
+
+Test::
+
+    ./target/debug/qeda --help
 
 License
 =======
