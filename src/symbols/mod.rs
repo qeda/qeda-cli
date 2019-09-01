@@ -13,7 +13,7 @@ pub trait SymbolHandler {
     fn draw(&self, config: &Config) -> Result<Drawing>;
 }
 
-impl Debug for SymbolHandler {
+impl Debug for dyn SymbolHandler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SymbolHandler")
     }

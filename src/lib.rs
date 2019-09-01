@@ -11,7 +11,6 @@ pub mod library;
 pub mod config;
 pub mod drawing;
 
-#[allow(deprecated)] // See https://github.com/rust-lang-nursery/error-chain/issues/254
 mod errors;
 mod component;
 mod symbols;
