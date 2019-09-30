@@ -1,8 +1,14 @@
 pub trait Transform {
     fn transform(&mut self, t: &Transformation);
+
+    fn scale(&mut self, sx: f64, sy: f64) {
+        let mut t = Transformation::new();
+        t.scale(sx, sy);
+        self.transform(&t);
+    }
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -14,7 +20,7 @@ impl Transform for Point {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Line {
     pub p: (Point, Point)
 }

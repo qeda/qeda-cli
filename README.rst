@@ -21,6 +21,17 @@ Test::
 
     ./target/debug/qeda --help
 
+First Steps
+===========
+
+Load and add a new component::
+
+    qeda add capacitor/c0603
+
+Generate a new KiCad library::
+
+    qeda generate test
+
 License
 =======
 

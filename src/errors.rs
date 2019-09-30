@@ -31,7 +31,7 @@ error_chain! {
 
         InvalidElementType(name: String, r#type: String) {
             description("invalid element type")
-            display("type of config element '{}' is expected to be of type '{}", name, r#type)
+            display("type of config element '{}' is expected to be of type '{}'", name, r#type)
         }
 
         InvalidSymbolHandler(handler: String) {

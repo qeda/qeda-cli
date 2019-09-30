@@ -87,13 +87,13 @@ impl<'a> Library<'a> {
 
         info!("adding component '{}'", id);
         let component_path = self.local_path(&id);
-        let compoment = if !Path::new(&component_path).exists() {
+        let component = if !Path::new(&component_path).exists() {
             self.load_component(&id)?
         } else {
             let component_yaml = fs::read_to_string(component_path)?;
             self.parse_component(&id, &component_yaml)?
         };
-        self.components.push(compoment);
+        self.components.push(component);
         Ok(())
     }
 
@@ -145,9 +145,9 @@ impl<'a> Library<'a> {
 
     /// Generates library for using in EDA.
     pub fn generate(&self, name: &str) -> Result<()> {
-        let handler = self.config.get_string("generator.handler")?;
+        let generator_type = self.config.get_string("generator.type")?;
         let generators = Generators::new();
-        generators.get(&handler)?.render(name, self)?;
+        generators.get(&generator_type)?.render(name, self)?;
         Ok(())
     }
 }
@@ -156,7 +156,6 @@ impl<'a> Library<'a> {
 impl<'a> Library<'a> {
     fn get_url_contents(&self, url: &str) -> Result<String> {
         let client = reqwest::Client::builder()
-            //.timeout(Duration::from_secs(self.config.get_u64("timeout_secs")?["timeout_secs"].as_i64().unwrap() as u64))
             .timeout(Duration::from_secs(self.config.get_u64("timeout_secs")?))
             .build()?;
         
@@ -171,7 +170,7 @@ impl<'a> Library<'a> {
 
     fn local_dir(&self, id: &str) -> String {
         let path_elems: Vec<&str> = id.split(ID_SEPARATOR).collect();
-        let last_but_one = path_elems.len()-1;
+        let last_but_one = path_elems.len() - 1;
         let result = QEDALIB_DIR.to_string();
         if last_but_one > 0 {
             result + "/" + &path_elems[..last_but_one].join("/")

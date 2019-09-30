@@ -82,12 +82,29 @@ impl Config {
         )
     }
 
+    pub fn get_i64(&self, key: &str)-> Result<i64> {
+        Ok(self.get_element(key)?
+            .as_i64()
+            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "integer".to_string()))?
+        )
+    }
+
     pub fn get_u64(&self, key: &str)-> Result<u64> {
         Ok(self.get_element(key)?
             .as_i64()
             .ok_or(ErrorKind::InvalidElementType(key.to_string(), "integer".to_string()))?
             as u64
         )
+    }
+
+    pub fn get_f64(&self, key: &str)-> Result<f64> {
+        let value = self.get_element(key)?;
+        Ok(value.as_f64()
+            .unwrap_or(
+                value.as_i64()
+                .ok_or(ErrorKind::InvalidElementType(key.to_string(), "float".to_string()))?
+                as f64
+            ))
     }
 
     pub fn insert_vec_if_missing(&mut self, key: &str) {
