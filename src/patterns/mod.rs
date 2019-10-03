@@ -35,6 +35,6 @@ impl<'a> Patterns<'a>  {
     }
 
     pub fn get_handler(&self, key: &str) -> Result<&Box<dyn PatternHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidPatternHandler(key.to_string()).into())
+        self.handlers.get(key).ok_or(ErrorKind::InvalidPatternType(key.to_string()).into())
     }
 }

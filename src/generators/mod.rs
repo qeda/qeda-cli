@@ -25,6 +25,6 @@ impl<'a> Generators<'a> {
     }
 
     pub fn get(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidGeneratorHandler(key.to_string()).into())
+        self.handlers.get(key).ok_or(ErrorKind::InvalidGeneratorType(key.to_string()).into())
     }
 }

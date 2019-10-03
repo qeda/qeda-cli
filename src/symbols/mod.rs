@@ -35,6 +35,6 @@ impl<'a> Symbols<'a> {
     }
 
     pub fn get_handler(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidSymbolHandler(key.to_string()).into())
+        self.handlers.get(key).ok_or(ErrorKind::InvalidSymbolType(key.to_string()).into())
     }
 }

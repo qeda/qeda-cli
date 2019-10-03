@@ -14,21 +14,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(path: &str) -> Config {
-        let yaml_string = fs::read_to_string(path);
-        let mut yaml = Yaml::Hash(yaml::Hash::new());
-
-        if let Ok(yaml_string) = yaml_string {
-            let docs = YamlLoader::load_from_str(&yaml_string);
-            if let Ok(mut docs) = docs {
-                if docs.len() > 0 {
-                    yaml = docs.pop().unwrap();
-                }
-            }
-        }
-
+    pub fn new() -> Config {
         Config {
-            yaml,
+            yaml: Yaml::Hash(yaml::Hash::new()),
         }
     }
 
@@ -49,7 +37,7 @@ impl Config {
 
     pub fn create_if_missing(path: &str) -> Result<()> {
         if !Path::new(path).exists() {
-            fs::write(path, b"")?;
+            fs::write(path, b"---")?;
         }
         Ok(())
     }

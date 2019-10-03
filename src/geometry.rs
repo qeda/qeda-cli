@@ -22,7 +22,8 @@ impl Transform for Point {
 
 #[derive(Clone, Default, Debug)]
 pub struct Line {
-    pub p: (Point, Point)
+    pub p: (Point, Point),
+    pub width: f64
 }
 
 impl Transform for Line {

@@ -34,19 +34,19 @@ error_chain! {
             display("type of config element '{}' is expected to be of type '{}'", name, r#type)
         }
 
-        InvalidSymbolHandler(handler: String) {
-            description("invalid symbol handler")
-            display("invalid symbol handler: '{}'", handler)
+        InvalidSymbolType(r#type: String) {
+            description("invalid symbol type")
+            display("invalid symbol type: '{}'", r#type)
         }
 
-        InvalidPatternHandler(handler: String) {
-            description("invalid pattern handler")
-            display("invalid pattern handler: '{}'", handler)
+        InvalidPatternType(r#type: String) {
+            description("invalid pattern type")
+            display("invalid pattern type: '{}'", r#type)
         }
 
-        InvalidGeneratorHandler(handler: String) {
-            description("invalid generator handler")
-            display("invalid generator handler: '{}'", handler)
+        InvalidGeneratorType(r#type: String) {
+            description("invalid generator type")
+            display("invalid generator type: '{}'", r#type)
         }
 
         InvalidSvgPath {

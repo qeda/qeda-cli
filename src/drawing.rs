@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::errors::*;
 use crate::geometry::*;
 use crate::svg::{self, *};
@@ -11,6 +13,7 @@ pub enum Element {
 pub struct Drawing {
     canvas_transform: Transformation,
     elements: Vec<Element>,
+    attrs: HashMap<String, String>,
 }
 
 impl Drawing {
@@ -18,7 +21,12 @@ impl Drawing {
         Drawing {
             canvas_transform: Transformation::new(),
             elements: Vec::new(),
+            attrs: HashMap::new(),
         }
+    }
+
+    pub fn elements(&self) -> &Vec<Element> {
+        &self.elements 
     }
 
     pub fn from_svg(svg: &str) -> Result<Drawing> {
@@ -47,8 +55,8 @@ impl Drawing {
         dbg!(&elements);
         for (_, element) in elements {
             match element {
-                SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y),
-                SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1),
+                SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
+                SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1, line.width),
                 _ => ()
             }
         }
@@ -56,17 +64,21 @@ impl Drawing {
         Ok(())
     }
 
-    pub fn elements(&self) -> &Vec<Element> {
-        &self.elements 
-    }
-
-    pub fn add_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64) {
+    pub fn add_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, width: f64) {
         let mut p0 = Point { x: x0, y: y0 };
         self.canvas_transform.transform(&mut p0);
         let mut p1 = Point { x: x1, y: y1 };
         self.canvas_transform.transform(&mut p1);
-        let line = Line { p: (p0, p1) };
+        let line = Line { p: (p0, p1), width };
         self.elements.push(Element::Line(line));
+    }
+
+    pub fn add_attr(&mut self, key: &str, value: String) {
+        self.attrs.insert(key.to_string(), value);
+    }
+
+    pub fn attr(&self, key: &str, def: &str) -> String {
+        self.attrs.get(key).unwrap_or(&def.to_string()).clone()
     }
 }
 

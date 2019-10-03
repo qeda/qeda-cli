@@ -28,6 +28,10 @@ impl Component {
         })
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     pub fn symbol(&self) -> &Drawing {
         &self.symbol
     }
