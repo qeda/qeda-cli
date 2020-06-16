@@ -14,6 +14,12 @@ pub struct Point {
     pub y: f64,
 }
 
+impl Point {
+    pub fn distance(begin: &Point, end: &Point) -> f64 {
+        ((end.x - begin.x).powi(2) + (end.y - begin.y).powi(2)).sqrt()
+    }
+}
+
 impl Transform for Point {
     fn transform(&mut self, t: &Transformation) {
         t.transform(self);
@@ -26,8 +32,26 @@ pub struct Line {
     pub width: f64
 }
 
+impl Line {
+    pub fn length(&self) -> f64 {
+        Point::distance(&self.p.0, &self.p.1)
+    }
+}
+
 impl Transform for Line {
     fn transform(&mut self, t: &Transformation) {
+        let len = self.length();
+        if len > 0. {
+            let mut zero_point = Point { x: 0., y: 0. };
+            let mut width_perpendicular = Point {
+                x: self.width * (self.p.1.y - self.p.0.y) / len,
+                y: self.width * (self.p.1.x - self.p.0.x) / len,
+            };
+            zero_point.transform(t);
+            width_perpendicular.transform(t);
+            self.width = Point::distance(&zero_point, &width_perpendicular);
+        }
+
         self.p.0.transform(t);
         self.p.1.transform(t);
     }
@@ -75,15 +99,15 @@ impl Transformation {
     }
 
     fn multiply(&mut self, n: &[f64; 9]) {
-        let m00 = self.m[0]*n[0] + self.m[1]*n[3] + self.m[2]*n[6];
-        let m01 = self.m[0]*n[1] + self.m[1]*n[4] + self.m[2]*n[7];
-        let m02 = self.m[0]*n[2] + self.m[1]*n[5] + self.m[2]*n[8];
-        let m10 = self.m[3]*n[0] + self.m[4]*n[3] + self.m[5]*n[6];
-        let m11 = self.m[3]*n[1] + self.m[4]*n[4] + self.m[5]*n[7];
-        let m12 = self.m[3]*n[2] + self.m[4]*n[5] + self.m[5]*n[8];
-        let m20 = self.m[6]*n[0] + self.m[7]*n[3] + self.m[8]*n[6];
-        let m21 = self.m[6]*n[1] + self.m[7]*n[4] + self.m[8]*n[7];
-        let m22 = self.m[6]*n[2] + self.m[7]*n[5] + self.m[8]*n[8];
+        let m00 = n[0]*self.m[0] + n[1]*self.m[3] + n[2]*self.m[6];
+        let m01 = n[0]*self.m[1] + n[1]*self.m[4] + n[2]*self.m[7];
+        let m02 = n[0]*self.m[2] + n[1]*self.m[5] + n[2]*self.m[8];
+        let m10 = n[3]*self.m[0] + n[4]*self.m[3] + n[5]*self.m[6];
+        let m11 = n[3]*self.m[1] + n[4]*self.m[4] + n[5]*self.m[7];
+        let m12 = n[3]*self.m[2] + n[4]*self.m[5] + n[5]*self.m[8];
+        let m20 = n[6]*self.m[0] + n[7]*self.m[3] + n[8]*self.m[6];
+        let m21 = n[6]*self.m[1] + n[7]*self.m[4] + n[8]*self.m[7];
+        let m22 = n[6]*self.m[2] + n[7]*self.m[5] + n[8]*self.m[8];
         self.m = [
             m00, m01, m02,
             m10, m11, m12,

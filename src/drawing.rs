@@ -26,7 +26,7 @@ impl Drawing {
     }
 
     pub fn elements(&self) -> &Vec<Element> {
-        &self.elements 
+        &self.elements
     }
 
     pub fn from_svg(svg: &str) -> Result<Drawing> {
@@ -49,8 +49,9 @@ impl Drawing {
             sy = 1.0/cv.len();
             dy = -cv.cy();
         }
-        self.canvas_transform.scale(sx, sy);
         self.canvas_transform.translate(dx, dy);
+        // SVG has y axis directed downwards. We need to turn it upwards
+        self.canvas_transform.scale(sx, -sy);
 
         dbg!(&elements);
         for (_, element) in elements {
@@ -65,11 +66,10 @@ impl Drawing {
     }
 
     pub fn add_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, width: f64) {
-        let mut p0 = Point { x: x0, y: y0 };
-        self.canvas_transform.transform(&mut p0);
-        let mut p1 = Point { x: x1, y: y1 };
-        self.canvas_transform.transform(&mut p1);
-        let line = Line { p: (p0, p1), width };
+        let p0 = Point { x: x0, y: y0 };
+        let p1 = Point { x: x1, y: y1 };
+        let mut line = Line { p: (p0, p1), width };
+        line.transform(&self.canvas_transform);
         self.elements.push(Element::Line(line));
     }
 
@@ -84,5 +84,5 @@ impl Drawing {
 
 // Private methods
 impl Drawing {
-    
+
 }
