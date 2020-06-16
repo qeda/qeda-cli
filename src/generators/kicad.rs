@@ -59,8 +59,9 @@ impl KicadGenerator {
                     Element::Line(l) => {
                         let mut l = l.clone();
                         l.scale(grid, grid);
+                        const PART_NUMBER: u8 = 0; // TODO: Replace by attribute
                         write!(f, "P 2 {} 1 {} {} {} {} {} N\n",
-                            i,
+                            PART_NUMBER,
                             l.width.round(),
                             l.p.0.x.round(), l.p.0.y.round(),
                             l.p.1.x.round(), l.p.1.y.round()
