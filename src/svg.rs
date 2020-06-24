@@ -126,6 +126,13 @@ impl Svg {
         Ok(())
     }
 
+    fn length_to_coordinate(length: &Length) -> f64 {
+        match length.unit {
+            LengthUnit::None => length.num,
+            _ => panic!("Unexpected length unit: {:?}", length.unit),
+        }
+    }
+
     fn to_polygon(&mut self, attributes: &Attributes) -> Result<SvgPolygon> {
         let mut polygon = SvgPolygon::default();
         for attr in attributes.iter() {
@@ -164,14 +171,14 @@ impl Svg {
                                         self.current_y = y;
                                         polygon.p.push(SvgPoint { x, y, marker: false });
                                     },
-                                    _ => (),  
+                                    _ => (),
                                 }
                             }
                         }
                     },
                     AttributeId::StrokeWidth => {
                         if let AttributeValue::Length(ref width) = attr.value {
-                            polygon.width = width.num;
+                            polygon.width = Svg::length_to_coordinate(&width);
                         }
                     },
                     _ => (),

@@ -44,7 +44,7 @@ impl KicadGenerator {
             write!(f, "#\n# {}\n#\n", component.name())?;
             let symbol = component.symbol();
             write!(f, "DEF {} {} 0 {} {} {} {} L {}\n",
-                component.name(), 
+                component.name(),
                 symbol.attr("ref_des", "U"),
                 5, // Space. TODO: Replace by attribute
                 symbol.attr("show_pin_numbers", "N"),
@@ -57,11 +57,12 @@ impl KicadGenerator {
             for (i, element) in elements.iter().enumerate() {
                 match element {
                     Element::Line(l) => {
-                        let mut l = l.clone(); 
+                        let mut l = l.clone();
                         l.scale(grid, grid);
+                        const PART_NUMBER: u8 = 0; // TODO: Replace by attribute
                         write!(f, "P 2 {} 1 {} {} {} {} {} N\n",
-                            i,
-                            (l.width*grid).round(),
+                            PART_NUMBER,
+                            l.width.round(),
                             l.p.0.x.round(), l.p.0.y.round(),
                             l.p.1.x.round(), l.p.1.y.round()
                         )?;
