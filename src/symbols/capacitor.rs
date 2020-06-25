@@ -8,7 +8,7 @@ pub struct CapacitorSymbol {}
 impl CapacitorSymbol {
     pub fn new()-> CapacitorSymbol {
         CapacitorSymbol {}
-    } 
+    }
 }
 
 impl SymbolHandler for CapacitorSymbol {
@@ -17,5 +17,5 @@ impl SymbolHandler for CapacitorSymbol {
         let mut drawing = Drawing::from_svg(include_str!("capacitor.svg"))?;
         drawing.add_attr("ref_des", "C".to_string());
         Ok(drawing)
-    } 
+    }
 }

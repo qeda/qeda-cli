@@ -2,9 +2,12 @@
 name = "qeda"
 description = "The tool for easy creating electronic component libraries"
 version = "0.0.3"
-authors = ["Noviga <qeda@noviga.com>"]
+authors = ["Shamil <shamil@shamil.ru>", "QEDA Authors"]
+repository = "https://github.com/qeda/qeda-rs/"
 license = "MIT"
 edition = "2018"
+readme = "README.md"
+exclude = ["scripts/*", ".vscode/*"]
 
 [lib]
 name = "qeda"

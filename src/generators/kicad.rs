@@ -54,7 +54,7 @@ impl KicadGenerator {
             )?;
             let elements = symbol.elements();
             f.write(b"DRAW\n")?;
-            for (i, element) in elements.iter().enumerate() {
+            for (_i, element) in elements.iter().enumerate() {
                 match element {
                     Element::Line(l) => {
                         let mut l = l.clone();
@@ -68,7 +68,7 @@ impl KicadGenerator {
                         )?;
                         println!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
                     },
-                    _ => (),
+                    //_ => (),
                 }
             }
             f.write(b"ENDDRAW\n")?;

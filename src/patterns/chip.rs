@@ -17,5 +17,5 @@ impl PatternHandler for ChipPattern {
         let mut drawing = Drawing::new();
         drawing.add_line(0.0, 1.0, 2.0, 3.0, 0.5);
         Ok(drawing)
-    } 
+    }
 }

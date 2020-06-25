@@ -1,10 +1,4 @@
-#![recursion_limit = "1024"]
-
-#[macro_use]
-mod log;
-
-use std::process;
-use qeda;
+#[macro_use] mod log;
 
 fn main() {
     debug!("running QEDA in debug mode");
@@ -13,6 +7,6 @@ fn main() {
         for e in e.iter().skip(1) {
             errln!("{}", e);
         }
-        process::exit(1);
+        std::process::exit(1);
     }
 }

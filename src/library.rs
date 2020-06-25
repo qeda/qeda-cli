@@ -25,12 +25,12 @@ pub struct Library<'a> {
 
 impl<'a> Library<'a> {
     /// Creates an empty component library.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use qeda::library::Library;
-    /// 
+    ///
     /// let lib = Library::new();
     /// ```
     pub fn new() -> Library<'a> {
@@ -43,20 +43,20 @@ impl<'a> Library<'a> {
     }
 
     // Creates a component library from config.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use qeda::config::Config;
     /// use qeda::library::Library;
-    /// 
+    ///
     /// let yaml = "
     /// components:
-    ///   capacitor/c0603: {} 
+    ///   capacitor/c0603: {}
     /// ";
     /// let config = Config::from_str(yaml).unwrap();
     /// let lib = Library::from_config(&config).unwrap();
-    /// 
+    ///
     /// assert_eq!(lib.components().len(), 1);
     /// ```
     pub fn from_config(config: &Config) -> Result<Library> {
@@ -71,15 +71,15 @@ impl<'a> Library<'a> {
     }
 
     /// Adds component to library config.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use qeda::library::Library;
-    /// 
+    ///
     /// let mut lib = Library::new();
     /// lib.add_component("capacitor/c0603").unwrap();
-    /// 
+    ///
     /// assert_eq!(lib.components().len(), 1);
     /// ```
     pub fn add_component(&mut self, id: &str) -> Result<()> {
@@ -98,12 +98,12 @@ impl<'a> Library<'a> {
     }
 
     /// Loads component config from remote repository.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use qeda::library::Library;
-    /// 
+    ///
     /// let lib = Library::new();
     /// lib.load_component("capacitor/c0603").unwrap();
     /// ```
@@ -115,7 +115,7 @@ impl<'a> Library<'a> {
         if !url.ends_with("/") {
             url += "/";
         }
-        
+
         if let Some(_manufacturer) = self.manufacturer(&id) {
             // TODO: Get common manufacturer info from README.rst
         }
@@ -129,7 +129,7 @@ impl<'a> Library<'a> {
         let component_path = self.local_path(&id);
         debug!("path: {}", component_path);
         fs::write(component_path, component_yaml)?;
-                
+
         Ok(component)
     }
 
@@ -158,7 +158,7 @@ impl<'a> Library<'a> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(self.config.get_u64("timeout_secs")?))
             .build()?;
-        
+
         let mut response = client.get(url).send()?.error_for_status()?;
         Ok(response.text()?)
     }
