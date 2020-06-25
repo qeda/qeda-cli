@@ -9,30 +9,30 @@ Build
 Ubuntu
 ------
 
-Prerequisites::
+Prerequisites:
 
     sudo apt install -y pkgconf libssl-dev
 
-Build::
+Build:
 
     cargo build
 
-Test::
+Test:
 
     ./target/debug/qeda --help
 
 First Steps
 ===========
 
-Load and add a new component::
+Load and add a new component:
 
     qeda add capacitor/c0603
 
-Generate a new KiCad library::
+Generate a new KiCad library:
 
-    qeda generate test
+    qeda generate mylib
 
 License
 =======
 
-Source code is licensed under `MIT license <LICENSE>`__.
+Source code is licensed under [MIT license](LICENSE).
