@@ -142,13 +142,17 @@ impl KicadGenerator {
             )?;
 
             let elements = symbol.elements();
-            for element in elements.iter() {
+            let text_boxes = elements.iter().filter_map(|element| match element {
+                Element::TextBox(text_box) => Some(text_box),
+                _ => None,
+            });
+            for text_box in text_boxes {
                 KicadGenerator::write_field(
                     &mut f,
                     &ref_des.as_str(),
                     &component.name().as_str(),
                     &params,
-                    &element
+                    &text_box
                 )?;
             }
 
@@ -217,34 +221,32 @@ impl KicadGenerator {
         ref_des: &str,
         component_name: &str,
         params: &GeneratorParameters,
-        element: &Element,
+        text_box: &TextBox,
     ) -> Result<()> {
-        if let Element::TextBox(text_box) = &element {
-            let field_kind = match text_box.id.as_str() {
-                "refdes" => Some(FieldKind::Reference),
-                "value" => Some(FieldKind::Value),
-                _ => None,
+        let field_kind = match text_box.id.as_str() {
+            "refdes" => Some(FieldKind::Reference),
+            "value" => Some(FieldKind::Value),
+            _ => None,
+        };
+        if let Some(field_kind) = field_kind {
+            let text = match field_kind {
+                FieldKind::Reference => ref_des,
+                FieldKind::Value => component_name,
             };
-            if let Some(field_kind) = field_kind {
-                let text = match field_kind {
-                    FieldKind::Reference => ref_des,
-                    FieldKind::Value => component_name,
-                };
-                write!(
-                    f,
-                    "F{field_number} \"{text}\" {x} {y} {dimension} {orientation} {visibility} \
-                    {hjustify} {vjustify}NN\n",
-                    field_number = field_kind as u8,
-                    text = text,
-                    x = (text_box.x * params.grid).round(),
-                    y = (text_box.y * params.grid).round(),
-                    dimension = (params.font_size.size(field_kind) * params.grid).round(),
-                    orientation = text_box.orientation.to_letter(),
-                    visibility = text_box.visibility.to_letter(),
-                    hjustify = text_box.halign.to_letter(),
-                    vjustify = text_box.valign.to_letter(),
-                )?;
-            }
+            write!(
+                f,
+                "F{field_number} \"{text}\" {x} {y} {dimension} {orientation} {visibility} \
+                {hjustify} {vjustify}NN\n",
+                field_number = field_kind as u8,
+                text = text,
+                x = (text_box.x * params.grid).round(),
+                y = (text_box.y * params.grid).round(),
+                dimension = (params.font_size.size(field_kind) * params.grid).round(),
+                orientation = text_box.orientation.to_letter(),
+                visibility = text_box.visibility.to_letter(),
+                hjustify = text_box.halign.to_letter(),
+                vjustify = text_box.valign.to_letter(),
+            )?;
         }
 
         Ok(())
