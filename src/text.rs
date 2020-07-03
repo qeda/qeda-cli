@@ -88,4 +88,5 @@ pub struct TextBox {
     pub visibility: Visibility,
     pub halign: HorizontalAlignment,
     pub valign: VerticalAlignment,
+    pub id: String,
 }

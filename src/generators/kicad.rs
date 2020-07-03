@@ -5,7 +5,6 @@ use std::io::prelude::*;
 use crate::errors::*;
 use crate::config::Config;
 use crate::library::Library;
-use crate::component::Component;
 use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
 use crate::drawing::{Element, Drawing};
@@ -134,10 +133,26 @@ impl KicadGenerator {
         let components = library.components();
         for component in components {
             let symbol = component.symbol();
-            KicadGenerator::write_component_header(&mut f, &params, &component, &symbol)?;
+            let ref_des = symbol.attr("ref_des", "U");
+            KicadGenerator::write_component_header(
+                &mut f,
+                &ref_des.as_str(),
+                &component.name().as_str(),
+                &symbol
+            )?;
+
+            let elements = symbol.elements();
+            for element in elements.iter() {
+                KicadGenerator::write_field(
+                    &mut f,
+                    &ref_des.as_str(),
+                    &component.name().as_str(),
+                    &params,
+                    &element
+                )?;
+            }
 
             f.write(b"DRAW\n")?;
-            let elements = symbol.elements();
             for element in elements.iter() {
                 KicadGenerator::write_element(&mut f, &params, &element)?;
             }
@@ -167,23 +182,23 @@ impl KicadGenerator {
                 )?;
                 println!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
             },
+            _ => {},
         }
         Ok(())
     }
 
     fn write_component_header(
         mut f: &File,
-        params: &GeneratorParameters,
-        component: &Component,
+        ref_des: &str,
+        name: &str,
         symbol: &Drawing,
     ) -> Result<()> {
-        write!(f, "#\n# {}\n#\n", component.name())?;
-        let ref_des = symbol.attr("ref_des", "U");
+        write!(f, "#\n# {}\n#\n", name)?;
         write!(
             f,
             "DEF {name} {reference} {unused} {text_offset} {draw_pinnumber} {draw_pinname} \
              {unit_count} {units_locked} {option_flag}\n",
-            name = component.name(),
+            name = name,
             reference = ref_des,
             unused = 0, // Required by specification to be zero
             text_offset = 5, // Space. TODO: Replace by attribute
@@ -194,40 +209,44 @@ impl KicadGenerator {
             option_flag = symbol.attr("power", "N"),
         )?;
 
-        if let Some(refdes_textbox) = &symbol.refdes() {
-            KicadGenerator::write_field(
-                &mut f, &params, FieldKind::Reference, &ref_des, refdes_textbox
-            )?;
-        }
-        if let Some(value_textbox) = &symbol.value() {
-            KicadGenerator::write_field(
-                &mut f, &params, FieldKind::Value, component.name(), value_textbox
-            )?;
-        }
         Ok(())
     }
 
     fn write_field(
         mut f: &File,
+        ref_des: &str,
+        component_name: &str,
         params: &GeneratorParameters,
-        kind: FieldKind,
-        text: &str,
-        text_box: &TextBox,
+        element: &Element,
     ) -> Result<()> {
-        write!(
-            f,
-            "F{field_number} \"{text}\" {x} {y} {dimension} {orientation} {visibility} {hjustify} \
-             {vjustify}NN\n",
-            field_number = kind as u8,
-            text = text,
-            x = (text_box.x * params.grid).round(),
-            y = (text_box.y * params.grid).round(),
-            dimension = (params.font_size.size(kind) * params.grid).round(),
-            orientation = text_box.orientation.to_letter(),
-            visibility = text_box.visibility.to_letter(),
-            hjustify = text_box.halign.to_letter(),
-            vjustify = text_box.valign.to_letter(),
-        )?;
+        if let Element::TextBox(text_box) = &element {
+            let field_kind = match text_box.id.as_str() {
+                "refdes" => Some(FieldKind::Reference),
+                "value" => Some(FieldKind::Value),
+                _ => None,
+            };
+            if let Some(field_kind) = field_kind {
+                let text = match field_kind {
+                    FieldKind::Reference => ref_des,
+                    FieldKind::Value => component_name,
+                };
+                write!(
+                    f,
+                    "F{field_number} \"{text}\" {x} {y} {dimension} {orientation} {visibility} \
+                    {hjustify} {vjustify}NN\n",
+                    field_number = field_kind as u8,
+                    text = text,
+                    x = (text_box.x * params.grid).round(),
+                    y = (text_box.y * params.grid).round(),
+                    dimension = (params.font_size.size(field_kind) * params.grid).round(),
+                    orientation = text_box.orientation.to_letter(),
+                    visibility = text_box.visibility.to_letter(),
+                    hjustify = text_box.halign.to_letter(),
+                    vjustify = text_box.valign.to_letter(),
+                )?;
+            }
+        }
+
         Ok(())
     }
 }

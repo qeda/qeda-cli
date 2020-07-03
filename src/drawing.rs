@@ -8,6 +8,7 @@ use crate::svg::{self, *};
 #[derive(Debug)]
 pub enum Element {
     Line(Line),
+    TextBox(TextBox),
 }
 
 #[derive(Debug)]
@@ -15,8 +16,6 @@ pub struct Drawing {
     canvas_transform: Transformation,
     elements: Vec<Element>,
     attrs: HashMap<String, String>,
-    refdes: Option<TextBox>,
-    value: Option<TextBox>,
 }
 
 impl Drawing {
@@ -25,8 +24,6 @@ impl Drawing {
             canvas_transform: Transformation::new(),
             elements: Vec::new(),
             attrs: HashMap::new(),
-            refdes: None,
-            value: None,
         }
     }
 
@@ -58,14 +55,12 @@ impl Drawing {
         // SVG has y axis directed downwards. We need to turn it upwards
         self.canvas_transform.scale(sx, -sy);
 
-        self.refdes = self.create_textbox("refdes", &mut elements);
-        self.value = self.create_textbox("value", &mut elements);
-
         dbg!(&elements);
-        for (_, element) in elements {
+        for (key, element) in elements {
             match element {
                 SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
                 SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1, line.width),
+                SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
                 _ => ()
             }
         }
@@ -88,26 +83,17 @@ impl Drawing {
     pub fn attr(&self, key: &str, def: &str) -> String {
         self.attrs.get(key).unwrap_or(&def.to_string()).clone()
     }
-
-    pub fn refdes(&self) -> &Option<TextBox> {
-        &self.refdes
-    }
-
-    pub fn value(&self) -> &Option<TextBox> {
-        &self.value
-    }
 }
 
 // Private methods
 impl Drawing {
-    fn create_textbox(&self, prefix: &str, elements: &mut SvgHash) -> Option<TextBox> {
-        let id = elements.keys().find(|&id| id.starts_with(prefix));
-        let id = match id {
-            Some(id) => id.to_string(),
-            _ => return None,
-        };
+    fn add_textbox(&mut self, key: &String, rect: &SvgRect) {
+        let id_attributes: Vec<&str> = key.split(':').collect();
 
-        let id_attributes: Vec<&str> = id.split(':').collect();
+        let id = match id_attributes.get(SvgRectIdAttributes::Id as usize) {
+            Some(id) => id,
+            None => "",
+        };
         let halign = HorizontalAlignment::from_attr(
             id_attributes.get(SvgRectIdAttributes::HorizontalAlignment as usize)
         );
@@ -115,17 +101,13 @@ impl Drawing {
             id_attributes.get(SvgRectIdAttributes::VerticalAlignment as usize)
         );
 
-        let rect = match elements.remove(&id) {
-            Some(SvgElement::Rect(rect)) => rect,
-            _ => return None,
-        };
         let mut p = Point {
             x: halign.calc_anchor_x(&rect),
             y: valign.calc_anchor_y(&rect),
         };
         self.canvas_transform.transform(&mut p);
 
-        Some(TextBox {
+        let textbox = TextBox {
             x: p.x,
             y: p.y,
             // TODO: extract info from attributes/id
@@ -133,6 +115,8 @@ impl Drawing {
             visibility: Visibility::Visible,
             halign: halign,
             valign: valign,
-        })
+            id: id.to_string(),
+        };
+        self.elements.push(Element::TextBox(textbox));
     }
 }
