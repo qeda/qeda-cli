@@ -10,7 +10,6 @@ use crate::patterns::Patterns;
 use crate::component::Component;
 use crate::generators::Generators;
 
-
 const ID_SEPARATOR: &str = "/";
 const QEDALIB_DIR: &str = "qedalib";
 const YAML_SUFFIX: &str = ".yml";
@@ -155,11 +154,11 @@ impl<'a> Library<'a> {
 // Private methods
 impl<'a> Library<'a> {
     fn get_url_contents(&self, url: &str) -> Result<String> {
-        let client = reqwest::Client::builder()
+        let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(self.config.get_u64("timeout")?))
             .build()?;
 
-        let mut response = client.get(url).send()?.error_for_status()?;
+        let response = client.get(url).send()?.error_for_status()?;
         Ok(response.text()?)
     }
 

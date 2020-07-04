@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -93,31 +94,31 @@ impl ToLetter for Orientation {
     }
 }
 
-impl ToLetter for HorizontalAlignment {
-    fn to_letter(&self) -> char {
+impl fmt::Display for HAlign {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            HorizontalAlignment::Left => 'L',
-            HorizontalAlignment::Center => 'C',
-            HorizontalAlignment::Right => 'R',
+            HAlign::Left   => write!(f, "L"),
+            HAlign::Center => write!(f, "C"),
+            HAlign::Right  => write!(f, "R"),
         }
     }
 }
 
-impl ToLetter for VerticalAlignment {
-    fn to_letter(&self) -> char {
+impl fmt::Display for VAlign {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            VerticalAlignment::Top => 'T',
-            VerticalAlignment::Center => 'C',
-            VerticalAlignment::Bottom => 'B',
+            VAlign::Top    => write!(f, "T"),
+            VAlign::Center => write!(f, "C"),
+            VAlign::Bottom => write!(f, "B"),
         }
     }
 }
 
-impl ToLetter for Visibility {
-    fn to_letter(&self) -> char {
+impl fmt::Display for Visibility {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Visibility::Visible => 'V',
-            Visibility::Hidden => 'H',
+            Visibility::Visible => write!(f, "V"),
+            Visibility::Hidden  => write!(f, "H"),
         }
     }
 }
@@ -241,11 +242,11 @@ impl KicadGenerator {
                 text = text,
                 x = (text_box.x * params.grid).round(),
                 y = (text_box.y * params.grid).round(),
-                dimension = (params.font_size.size(field_kind) * params.grid).round(),
+                dimension = params.font_size.size(field_kind).round(),
                 orientation = text_box.orientation.to_letter(),
-                visibility = text_box.visibility.to_letter(),
-                hjustify = text_box.halign.to_letter(),
-                vjustify = text_box.valign.to_letter(),
+                visibility = text_box.visibility,
+                hjustify = text_box.halign,
+                vjustify = text_box.valign,
             )?;
         }
 

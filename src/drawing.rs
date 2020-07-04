@@ -55,7 +55,7 @@ impl Drawing {
         // SVG has y axis directed downwards. We need to turn it upwards
         self.canvas_transform.scale(sx, -sy);
 
-        debug!("{:?}", &elements);
+        debug!("SVG elements: {:?}", &elements);
         for (key, element) in elements {
             match element {
                 SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
@@ -64,7 +64,7 @@ impl Drawing {
                 _ => ()
             }
         }
-        debug!("{:?}", &self.elements());
+        debug!("Elements: {:?}", &self.elements());
         Ok(())
     }
 
@@ -88,18 +88,11 @@ impl Drawing {
 // Private methods
 impl Drawing {
     fn add_textbox(&mut self, key: &String, rect: &SvgRect) {
-        let id_attributes: Vec<&str> = key.split(':').collect();
+        let id_attrs: Vec<&str> = key.split(':').collect();
 
-        let id = match id_attributes.get(SvgRectIdAttributes::Id as usize) {
-            Some(id) => id,
-            None => "",
-        };
-        let halign = HorizontalAlignment::from_attr(
-            id_attributes.get(SvgRectIdAttributes::HorizontalAlignment as usize)
-        );
-        let valign = VerticalAlignment::from_attr(
-            id_attributes.get(SvgRectIdAttributes::VerticalAlignment as usize)
-        );
+        let id = id_attrs.get(SvgRectIdAttrs::Id as usize).unwrap_or(&"").to_string();
+        let halign = HAlign::from_attr(id_attrs.get(SvgRectIdAttrs::HAlign as usize));
+        let valign = VAlign::from_attr(id_attrs.get(SvgRectIdAttrs::VAlign as usize));
 
         let mut p = Point {
             x: halign.calc_anchor_x(&rect),
@@ -115,7 +108,7 @@ impl Drawing {
             visibility: Visibility::Visible,
             halign: halign,
             valign: valign,
-            id: id.to_string(),
+            id: id,
         };
         self.elements.push(Element::TextBox(textbox));
     }

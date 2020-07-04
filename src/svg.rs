@@ -3,10 +3,11 @@ use svgdom::*;
 
 use crate::errors::*;
 
-pub enum SvgRectIdAttributes {
+#[repr(usize)]
+pub enum SvgRectIdAttrs {
     Id = 0,
-    HorizontalAlignment = 1,
-    VerticalAlignment = 2,
+    HAlign = 1,
+    VAlign = 2,
 }
 
 #[derive(Clone, Default, Debug)]

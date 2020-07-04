@@ -11,63 +11,63 @@ impl Default for Orientation {
 }
 
 #[derive(Debug)]
-pub enum HorizontalAlignment {
+pub enum HAlign {
     Left,
     Center,
     Right,
 }
 
-impl HorizontalAlignment {
-    pub fn from_attr(attr: Option<&&str>) -> HorizontalAlignment {
+impl HAlign {
+    pub fn from_attr(attr: Option<&&str>) -> HAlign {
         match attr {
-            Some(&"left") => HorizontalAlignment::Left,
-            Some(&"right") => HorizontalAlignment::Right,
-            Some(&"center") => HorizontalAlignment::Center,
-            _ => HorizontalAlignment::default(),
+            Some(&"left") => HAlign::Left,
+            Some(&"right") => HAlign::Right,
+            Some(&"center") => HAlign::Center,
+            _ => HAlign::default(),
         }
     }
 
     pub fn calc_anchor_x(&self, rect: &SvgRect) -> f64 {
         match self {
-            HorizontalAlignment::Left => rect.x,
-            HorizontalAlignment::Center => rect.x + rect.width / 2.,
-            HorizontalAlignment::Right => rect.x + rect.width,
+            HAlign::Left => rect.x,
+            HAlign::Center => rect.x + rect.width / 2.,
+            HAlign::Right => rect.x + rect.width,
         }
     }
 }
 
-impl Default for HorizontalAlignment {
-    fn default() -> Self { HorizontalAlignment::Left }
+impl Default for HAlign {
+    fn default() -> Self { HAlign::Left }
 }
 
 #[derive(Debug)]
-pub enum VerticalAlignment {
+pub enum VAlign {
     Top,
     Center,
     Bottom,
 }
 
-impl VerticalAlignment {
-    pub fn from_attr(attr: Option<&&str>) -> VerticalAlignment {
+impl VAlign {
+    pub fn from_attr(attr: Option<&&str>) -> VAlign {
         match attr {
-            Some(&"bottom") => VerticalAlignment::Bottom,
-            Some(&"top") => VerticalAlignment::Top,
-            Some(&"center") => VerticalAlignment::Center,
-            _ => VerticalAlignment::default(),
+            Some(&"bottom") => VAlign::Bottom,
+            Some(&"top") => VAlign::Top,
+            Some(&"center") => VAlign::Center,
+            _ => VAlign::default(),
         }
     }
 
     pub fn calc_anchor_y(&self, rect: &SvgRect) -> f64 {
         match self {
-            VerticalAlignment::Top => rect.y,
-            VerticalAlignment::Center => rect.y + rect.height / 2.,
-            VerticalAlignment::Bottom => rect.y + rect.height,
+            VAlign::Top => rect.y,
+            VAlign::Center => rect.y + rect.height / 2.,
+            VAlign::Bottom => rect.y + rect.height,
         }
     }
 }
 
-impl Default for VerticalAlignment {
-    fn default() -> Self { VerticalAlignment::Center }
+impl Default for VAlign {
+    fn default() -> Self { VAlign::Center }
 }
 
 #[derive(Debug)]
@@ -86,7 +86,7 @@ pub struct TextBox {
     pub y: f64,
     pub orientation: Orientation,
     pub visibility: Visibility,
-    pub halign: HorizontalAlignment,
-    pub valign: VerticalAlignment,
+    pub halign: HAlign,
+    pub valign: VAlign,
     pub id: String,
 }
