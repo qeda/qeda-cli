@@ -15,7 +15,7 @@ impl SymbolHandler for CapacitorSymbol {
     fn draw(&self, _config: &Config)-> Result<Drawing> {
         debug!("draw capacitor symbol");
         let mut drawing = Drawing::from_svg(include_str!("capacitor.svg"))?;
-        drawing.add_attr("ref_des", "C".to_string());
+        drawing.add_attr("ref-des", "C");
         Ok(drawing)
     }
 }

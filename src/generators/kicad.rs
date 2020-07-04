@@ -51,10 +51,10 @@ struct FontSize {
 impl FontSize {
     pub fn new(config: &Config) -> Result<FontSize> {
         Ok(FontSize {
-            default: config.get_f64("generator.font_size.default")?,
-            ref_des: config.get_f64("generator.font_size.ref_des")?,
-            name: config.get_f64("generator.font_size.name")?,
-            pin: config.get_f64("generator.font_size.pin")?,
+            default: config.get_f64("generator.font-size.default")?,
+            ref_des: config.get_f64("generator.font-size.ref-des")?,
+            name: config.get_f64("generator.font-size.name")?,
+            pin: config.get_f64("generator.font-size.pin")?,
         })
     }
 
@@ -74,7 +74,7 @@ struct GeneratorParameters {
 impl GeneratorParameters {
     pub fn new(config: &Config) -> Result<GeneratorParameters> {
         Ok(GeneratorParameters {
-            grid: config.get_f64("generator.symbol_grid")?,
+            grid: config.get_f64("generator.symbol-grid")?,
             font_size: FontSize::new(&config)?,
         })
     }
@@ -133,7 +133,7 @@ impl KicadGenerator {
         let components = library.components();
         for component in components {
             let symbol = component.symbol();
-            let ref_des = symbol.attr("ref_des", "U");
+            let ref_des = symbol.attr("ref-des", "U");
             KicadGenerator::write_component_header(
                 &mut f,
                 &ref_des.as_str(),
@@ -184,7 +184,7 @@ impl KicadGenerator {
                     x1 = l.p.0.x.round(), y1 = l.p.0.y.round(),
                     x2 = l.p.1.x.round(), y2 = l.p.1.y.round(),
                 )?;
-                println!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
+                debug!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
             },
             _ => {},
         }
@@ -224,7 +224,7 @@ impl KicadGenerator {
         text_box: &TextBox,
     ) -> Result<()> {
         let field_kind = match text_box.id.as_str() {
-            "refdes" => Some(FieldKind::Reference),
+            "ref-des" => Some(FieldKind::Reference),
             "value" => Some(FieldKind::Value),
             _ => None,
         };

@@ -55,7 +55,7 @@ impl Drawing {
         // SVG has y axis directed downwards. We need to turn it upwards
         self.canvas_transform.scale(sx, -sy);
 
-        dbg!(&elements);
+        debug!("{:?}", &elements);
         for (key, element) in elements {
             match element {
                 SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
@@ -64,7 +64,7 @@ impl Drawing {
                 _ => ()
             }
         }
-        dbg!(&self.elements());
+        debug!("{:?}", &self.elements());
         Ok(())
     }
 
@@ -76,8 +76,8 @@ impl Drawing {
         self.elements.push(Element::Line(line));
     }
 
-    pub fn add_attr(&mut self, key: &str, value: String) {
-        self.attrs.insert(key.to_string(), value);
+    pub fn add_attr(&mut self, key: &str, value: &str) {
+        self.attrs.insert(key.to_string(), value.to_string());
     }
 
     pub fn attr(&self, key: &str, def: &str) -> String {

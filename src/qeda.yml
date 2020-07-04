@@ -1,11 +1,11 @@
-base_url: https://raw.githubusercontent.com/qeda/lib/master/
-timeout_secs: 5
+base-url: https://raw.githubusercontent.com/qeda/lib/master/
+timeout: 5
 
 generator:
   type: kicad
-  symbol_grid: 50
-  font_size:
+  symbol-grid: 50
+  font-size:
     default: 0.5
-    ref_des: 0.5
+    ref-des: 0.5
     name: 0.5
     pin: 0.5

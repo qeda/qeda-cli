@@ -111,7 +111,7 @@ impl<'a> Library<'a> {
         let id = id.to_lowercase();
 
         info!("loading component '{}'", id);
-        let mut url = self.config.get_string("base_url")?;
+        let mut url = self.config.get_string("base-url")?;
         if !url.ends_with("/") {
             url += "/";
         }
@@ -156,7 +156,7 @@ impl<'a> Library<'a> {
 impl<'a> Library<'a> {
     fn get_url_contents(&self, url: &str) -> Result<String> {
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(self.config.get_u64("timeout_secs")?))
+            .timeout(Duration::from_secs(self.config.get_u64("timeout")?))
             .build()?;
 
         let mut response = client.get(url).send()?.error_for_status()?;
