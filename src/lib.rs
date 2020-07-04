@@ -18,6 +18,7 @@ mod patterns;
 mod geometry;
 mod generators;
 mod svg;
+mod text;
 
 pub use errors::Result;
 

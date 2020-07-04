@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use crate::errors::*;
 use crate::geometry::*;
+use crate::text::*;
 use crate::svg::{self, *};
 
 #[derive(Debug)]
 pub enum Element {
     Line(Line),
+    TextBox(TextBox),
 }
 
 #[derive(Debug)]
@@ -54,10 +56,11 @@ impl Drawing {
         self.canvas_transform.scale(sx, -sy);
 
         dbg!(&elements);
-        for (_, element) in elements {
+        for (key, element) in elements {
             match element {
                 SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
                 SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1, line.width),
+                SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
                 _ => ()
             }
         }
@@ -84,5 +87,36 @@ impl Drawing {
 
 // Private methods
 impl Drawing {
+    fn add_textbox(&mut self, key: &String, rect: &SvgRect) {
+        let id_attributes: Vec<&str> = key.split(':').collect();
 
+        let id = match id_attributes.get(SvgRectIdAttributes::Id as usize) {
+            Some(id) => id,
+            None => "",
+        };
+        let halign = HorizontalAlignment::from_attr(
+            id_attributes.get(SvgRectIdAttributes::HorizontalAlignment as usize)
+        );
+        let valign = VerticalAlignment::from_attr(
+            id_attributes.get(SvgRectIdAttributes::VerticalAlignment as usize)
+        );
+
+        let mut p = Point {
+            x: halign.calc_anchor_x(&rect),
+            y: valign.calc_anchor_y(&rect),
+        };
+        self.canvas_transform.transform(&mut p);
+
+        let textbox = TextBox {
+            x: p.x,
+            y: p.y,
+            // TODO: extract info from attributes/id
+            orientation: Orientation::Horizontal,
+            visibility: Visibility::Visible,
+            halign: halign,
+            valign: valign,
+            id: id.to_string(),
+        };
+        self.elements.push(Element::TextBox(textbox));
+    }
 }

@@ -3,6 +3,12 @@ use svgdom::*;
 
 use crate::errors::*;
 
+pub enum SvgRectIdAttributes {
+    Id = 0,
+    HorizontalAlignment = 1,
+    VerticalAlignment = 2,
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct SvgPoint {
     pub x: f64,
@@ -58,12 +64,21 @@ pub struct SvgPolygon {
     pub width: f64,
 }
 
+#[derive(Default, Debug)]
+pub struct SvgRect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
 #[derive(Debug)]
 pub enum SvgElement {
     HLine(SvgHLine),
     VLine(SvgVLine),
     Line(SvgLine),
     Polygon(SvgPolygon),
+    Rect(SvgRect),
 }
 
 pub type SvgHash = LinkedHashMap<String, SvgElement>;
@@ -115,6 +130,11 @@ impl Svg {
                         self.elements.insert(path_id, SvgElement::Polygon(polygon));
                     }
                 },
+                ElementId::Rect => {
+                    let rect_id = node.id().to_string();
+                    let rect = self.to_rect(&node.attributes())?;
+                    self.elements.insert(rect_id, SvgElement::Rect(rect));
+                },
                 _ => (),
             }
         }
@@ -131,6 +151,36 @@ impl Svg {
             LengthUnit::None => length.num,
             _ => panic!("Unexpected length unit: {:?}", length.unit),
         }
+    }
+
+    fn to_rect(&mut self, attributes: &Attributes) -> Result<SvgRect> {
+        let mut rect = SvgRect::default();
+        for attr in attributes.iter() {
+            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+                AttributeId::X => {
+                    if let AttributeValue::Length(ref length) = attr.value {
+                        rect.x = Svg::length_to_coordinate(&length);
+                    }
+                },
+                AttributeId::Y => {
+                    if let AttributeValue::Length(ref length) = attr.value {
+                        rect.y = Svg::length_to_coordinate(&length);
+                    }
+                },
+                AttributeId::Width => {
+                    if let AttributeValue::Length(ref length) = attr.value {
+                        rect.width = Svg::length_to_coordinate(&length);
+                    }
+                },
+                AttributeId::Height => {
+                    if let AttributeValue::Length(ref length) = attr.value {
+                        rect.height = Svg::length_to_coordinate(&length);
+                    }
+                },
+                _ => (),
+            }
+        }
+        Ok(rect)
     }
 
     fn to_polygon(&mut self, attributes: &Attributes) -> Result<SvgPolygon> {
