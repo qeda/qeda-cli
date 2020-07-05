@@ -47,5 +47,9 @@ error_chain! {
         InvalidSvgPath {
             display("invalid SVG path")
         }
+
+        UnsupportedSvgUnits(units: String) {
+            display("unsupported SVG units: '{}'", units)
+        }
     }
 }
