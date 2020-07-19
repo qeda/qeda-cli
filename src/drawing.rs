@@ -3,12 +3,14 @@ use std::collections::HashMap;
 use crate::errors::*;
 use crate::geometry::*;
 use crate::text::*;
+use crate::pin::*;
 use crate::svg::{self, *};
 
 #[derive(Debug)]
 pub enum Element {
     Line(Line),
     TextBox(TextBox),
+    Pin(Pin),
 }
 
 #[derive(Debug)]
@@ -29,6 +31,10 @@ impl Drawing {
 
     pub fn elements(&self) -> &Vec<Element> {
         &self.elements
+    }
+
+    pub fn mut_elements(&mut self) -> &mut Vec<Element> {
+        &mut self.elements
     }
 
     pub fn from_svg(svg: &str) -> Result<Drawing> {
@@ -58,8 +64,20 @@ impl Drawing {
         debug!("SVG elements: {:?}", &elements);
         for (key, element) in elements {
             match element {
-                SvgElement::HLine(line) => self.add_line(line.x0, line.y, line.x1, line.y, line.width),
-                SvgElement::VLine(line) => self.add_line(line.x, line.y0, line.x, line.y1, line.width),
+                SvgElement::HLine(line) => {
+                    if key.starts_with("pin") {
+                        self.add_pin(&key, line.x0, line.y, line.x1, line.y)
+                    } else {
+                        self.add_line(line.x0, line.y, line.x1, line.y, line.width)
+                    }
+                },
+                SvgElement::VLine(line) => {
+                    if key.starts_with("pin") {
+                        self.add_pin(&key, line.x, line.y0, line.x, line.y1)
+                    } else {
+                        self.add_line(line.x, line.y0, line.x, line.y1, line.width)
+                    }
+                },
                 SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
                 _ => ()
             }
@@ -111,5 +129,31 @@ impl Drawing {
             id: id,
         };
         self.elements.push(Element::TextBox(textbox));
+    }
+
+    fn add_pin(&mut self, key: &String, x0: f64, y0: f64, x1: f64, y1: f64) {
+        let id_attrs: Vec<&str> = key.split(':').collect();
+        let net = *id_attrs.get(0).unwrap_or(&"");
+        let net = if net.starts_with("pin") {
+            &net[3..]
+        } else {
+            net
+        };
+        let net = if net.starts_with("-") {
+            &net[1..]
+        } else {
+            net
+        };
+
+        let halign = HAlign::from_attr(id_attrs.get(1));
+        let valign = VAlign::from_attr(id_attrs.get(2));
+
+        let p0 = Point { x: x0, y: y0 };
+        let p1 = Point { x: x1, y: y1 };
+        let mut line = Line { p: (p0, p1), width: 0. };
+        line.transform(&self.canvas_transform);
+
+        let pin = Pin::new(&net, halign, valign, &line);
+        self.elements.push(Element::Pin(pin));
     }
 }

@@ -10,6 +10,7 @@ use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
 use crate::drawing::{Element, Drawing};
 use crate::text::*;
+use crate::pin::*;
 
 const KICADLIB_DIR: &str = "kicadlib";
 
@@ -123,6 +124,57 @@ impl fmt::Display for Visibility {
     }
 }
 
+impl ToLetter for ElectricKind {
+    fn to_letter(&self) -> char {
+        match self {
+            ElectricKind::Input => 'I',
+            ElectricKind::Output => 'O',
+            ElectricKind::Bidirectional => 'B',
+            ElectricKind::Tristate => 'T',
+            ElectricKind::Passive => 'P',
+            ElectricKind::Unspecified => 'U',
+            ElectricKind::PowerInput => 'W',
+            ElectricKind::PowerOutput => 'w',
+            ElectricKind::OpenCollector => 'C',
+            ElectricKind::OpenEmitter => 'E',
+            ElectricKind::NotConnected => 'N',
+        }
+    }
+}
+
+impl PinShape {
+    fn to_str(&self) -> &str {
+        match self {
+            PinShape::Line => "",
+            PinShape::Inverted => "I",
+            PinShape::Clock => "C",
+            PinShape::InvertedClock => "CL",
+            PinShape::InputLow => "L",
+            PinShape::ClockLow => "CL",
+            PinShape::OutputLow => "V",
+            PinShape::FallingEdgeClock => "F",
+            PinShape::NonLogic => "X",
+        }
+    }
+}
+
+impl fmt::Display for PinShape {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
+impl ToLetter for PinOrientation {
+    fn to_letter(&self) -> char {
+        match self {
+            PinOrientation::Up => 'U',
+            PinOrientation::Down => 'D',
+            PinOrientation::Right => 'R',
+            PinOrientation::Left => 'L',
+        }
+    }
+}
+
 impl KicadGenerator {
     fn render_symbols(&self, name: &str, library: &Library) -> Result<()> {
         let params = GeneratorParameters::new(&library.config())?;
@@ -171,6 +223,28 @@ impl KicadGenerator {
 
     fn write_element(mut f: &File, params: &GeneratorParameters, element: &Element) -> Result<()> {
         match element {
+            Element::Pin(pin) => {
+                let mut p = pin.pos.clone();
+                p.scale(params.grid, params.grid);
+                write!(
+                    f,
+                    "X {name} {number} {posx} {posy} {length} {orientation} {snum} {snom} \
+                    {unit} {convert} {etype} {shape}\n",
+                    name = pin.net,
+                    number = pin.number,
+                    posx = p.x.round(),
+                    posy = p.y.round(),
+                    length = (pin.length * params.grid).round(),
+                    orientation = pin.orientation.to_letter(),
+                    snum = params.font_size.pin, // pin number text size
+                    snom = params.font_size.name, // pin name text size
+                    unit = 0, // 0 if common to all parts. If not, number of the part (1. .n)
+                    convert = 0, // 0 if common to the representations, if not 1 or 2
+                    etype = pin.ekind.to_letter(),
+                    shape = pin.shape,
+                )?;
+                debug!("Pin: {}, {}, ({}, {})", pin.net, pin.number, pin.pos.x, pin.pos.y);
+            },
             Element::Line(l) => {
                 let mut l = l.clone();
                 l.scale(params.grid, params.grid);
