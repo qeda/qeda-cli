@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use regex::Regex;
 
 use crate::errors::*;
 use crate::geometry::*;
@@ -133,20 +134,13 @@ impl Drawing {
 
     fn add_pin(&mut self, key: &String, x0: f64, y0: f64, x1: f64, y1: f64) {
         let id_attrs: Vec<&str> = key.split(':').collect();
-        let net = *id_attrs.get(0).unwrap_or(&"");
-        let net = if net.starts_with("pin") {
-            &net[3..]
-        } else {
-            net
-        };
-        let net = if net.starts_with("-") {
-            &net[1..]
-        } else {
-            net
-        };
 
-        let halign = HAlign::from_attr(id_attrs.get(1));
-        let valign = VAlign::from_attr(id_attrs.get(2));
+        let id = *id_attrs.get(SvgPinIdAttrs::Id as usize).unwrap_or(&"");
+        let net_regex = Regex::new(r"^(pin)?\-?(?P<net>.*)$").unwrap();
+        let net = net_regex.captures(id).unwrap().name("net").unwrap().as_str();
+
+        let halign = HAlign::from_attr(id_attrs.get(SvgPinIdAttrs::HAlign as usize));
+        let valign = VAlign::from_attr(id_attrs.get(SvgPinIdAttrs::VAlign as usize));
 
         let p0 = Point { x: x0, y: y0 };
         let p1 = Point { x: x1, y: y1 };
