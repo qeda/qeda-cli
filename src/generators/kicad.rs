@@ -148,7 +148,7 @@ impl PinShape {
             PinShape::Line => "",
             PinShape::Inverted => "I",
             PinShape::Clock => "C",
-            PinShape::InvertedClock => "CL",
+            PinShape::InvertedClock => "CI",
             PinShape::InputLow => "L",
             PinShape::ClockLow => "CL",
             PinShape::OutputLow => "V",
