@@ -18,21 +18,16 @@ impl Pinout {
             for (pin, numbers) in config_pinout {
                 if let Yaml::String(pin) = pin {
                     let numbers = match numbers {
-                        Yaml::Integer(number) => {
-                            vec!(*number as u32)
-                        },
-                        Yaml::Array(numbers) => {
-                            numbers.iter().filter_map(|number| match number {
+                        Yaml::Integer(number) => vec!(*number as u32),
+                        Yaml::Array(numbers) => numbers.iter().filter_map(
+                            |number| match number {
                                 Yaml::Integer(number) => Some(*number as u32),
                                 _ => None,
-                            }).collect()
-                        },
-                        Yaml::String(numbers) => {
-                            numbers.split(',').filter_map(|number| match number.trim().parse() {
-                                Ok(number) => Some(number),
-                                _ => None,
-                            }).collect()
-                        },
+                            }
+                        ).collect(),
+                        Yaml::String(numbers) => numbers.split(',').filter_map(
+                            |number| number.trim().parse().ok()
+                        ).collect(),
                         _ => vec!(),
                     };
                     pinout.pins.insert(pin.to_string(), numbers);
