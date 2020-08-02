@@ -45,10 +45,11 @@ pub struct Pin {
     pub pos: Point,
     pub length: f64,
     pub net: String,
-    pub number: u32,
+    pub number: String,
     pub ekind: ElectricKind,
     pub shape: PinShape,
     pub orientation: PinOrientation,
+    pub visibility: Visibility,
 }
 
 impl Pin {
@@ -80,10 +81,11 @@ impl Pin {
             pos: Point { x: posx, y: posy },
             length: l.length(),
             net: net.to_string(),
-            number: 0,
+            number: "0".to_string(),
             ekind: ElectricKind::Unspecified,
             shape: PinShape::Line,
             orientation: orientation,
+            visibility: Visibility::Visible,
         }
     }
 }

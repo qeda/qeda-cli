@@ -20,8 +20,8 @@ impl SymbolHandler for CapacitorSymbol {
         drawing.add_attr("ref-des", "C");
 
         let mut pinout = Pinout::from_config(config);
-        pinout.add_default("L", 1);
-        pinout.add_default("R", 2);
+        pinout.add_default("L", "1");
+        pinout.add_default("R", "2");
         pinout.apply_to(drawing.mut_elements());
 
         Ok(drawing)
