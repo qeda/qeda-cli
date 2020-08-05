@@ -10,6 +10,7 @@ use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
 use crate::drawing::{Element, Drawing};
 use crate::text::*;
+use crate::pin::*;
 
 const KICADLIB_DIR: &str = "kicadlib";
 
@@ -81,15 +82,11 @@ impl GeneratorParameters {
     }
 }
 
-trait ToLetter {
-    fn to_letter(&self) -> char;
-}
-
-impl ToLetter for Orientation {
-    fn to_letter(&self) -> char {
+impl fmt::Display for Orientation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Orientation::Horizontal => 'H',
-            Orientation::Vertical => 'V',
+            Orientation::Horizontal => write!(f, "H"),
+            Orientation::Vertical => write!(f, "V"),
         }
     }
 }
@@ -119,6 +116,51 @@ impl fmt::Display for Visibility {
         match self {
             Visibility::Visible => write!(f, "V"),
             Visibility::Hidden  => write!(f, "H"),
+        }
+    }
+}
+
+impl fmt::Display for ElectricKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ElectricKind::Input => write!(f, "I"),
+            ElectricKind::Output => write!(f, "O"),
+            ElectricKind::Bidirectional => write!(f, "B"),
+            ElectricKind::Tristate => write!(f, "T"),
+            ElectricKind::Passive => write!(f, "P"),
+            ElectricKind::Unspecified => write!(f, "U"),
+            ElectricKind::PowerInput => write!(f, "W"),
+            ElectricKind::PowerOutput => write!(f, "w"),
+            ElectricKind::OpenCollector => write!(f, "C"),
+            ElectricKind::OpenEmitter => write!(f, "E"),
+            ElectricKind::NotConnected => write!(f, "N"),
+        }
+    }
+}
+
+impl fmt::Display for PinShape {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PinShape::Line => write!(f, ""),
+            PinShape::Inverted => write!(f, "I"),
+            PinShape::Clock => write!(f, "C"),
+            PinShape::InvertedClock => write!(f, "CI"),
+            PinShape::InputLow => write!(f, "L"),
+            PinShape::ClockLow => write!(f, "CL"),
+            PinShape::OutputLow => write!(f, "V"),
+            PinShape::FallingEdgeClock => write!(f, "F"),
+            PinShape::NonLogic => write!(f, "X"),
+        }
+    }
+}
+
+impl fmt::Display for PinOrientation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PinOrientation::Up => write!(f, "U"),
+            PinOrientation::Down => write!(f, "D"),
+            PinOrientation::Right => write!(f, "R"),
+            PinOrientation::Left => write!(f, "L"),
         }
     }
 }
@@ -171,6 +213,32 @@ impl KicadGenerator {
 
     fn write_element(mut f: &File, params: &GeneratorParameters, element: &Element) -> Result<()> {
         match element {
+            Element::Pin(pin) => {
+                let mut p = pin.pos.clone();
+                p.scale(params.grid, params.grid);
+                write!(
+                    f,
+                    "X {name} {number} {posx} {posy} {length} {orientation} {snum} {snom} \
+                    {unit} {convert} {etype} {visibility}{shape}\n",
+                    name = pin.net,
+                    number = pin.number,
+                    posx = p.x.round(),
+                    posy = p.y.round(),
+                    length = (pin.length * params.grid).round(),
+                    orientation = pin.orientation,
+                    snum = params.font_size.pin, // pin number text size
+                    snom = params.font_size.name, // pin name text size
+                    unit = 0, // 0 if common to all parts. If not, number of the part (1. .n)
+                    convert = 0, // 0 if common to the representations, if not 1 or 2
+                    etype = pin.ekind,
+                    visibility = match pin.visibility {
+                        Visibility::Visible => "",
+                        Visibility::Hidden => "N",
+                    },
+                    shape = pin.shape,
+                )?;
+                debug!("Pin: {}, {}, ({}, {})", pin.net, pin.number, pin.pos.x, pin.pos.y);
+            },
             Element::Line(l) => {
                 let mut l = l.clone();
                 l.scale(params.grid, params.grid);
@@ -243,7 +311,7 @@ impl KicadGenerator {
                 x = (text_box.x * params.grid).round(),
                 y = (text_box.y * params.grid).round(),
                 dimension = params.font_size.size(field_kind).round(),
-                orientation = text_box.orientation.to_letter(),
+                orientation = text_box.orientation,
                 visibility = text_box.visibility,
                 hjustify = text_box.halign,
                 vjustify = text_box.valign,

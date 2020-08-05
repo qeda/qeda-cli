@@ -23,3 +23,4 @@ reqwest = { version = "0.10", features = ["blocking"] }
 svgdom = "0.18"
 termcolor = "1.1"
 yaml-rust = "0.4"
+regex = "1.3"

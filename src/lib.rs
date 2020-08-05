@@ -17,6 +17,7 @@ mod symbols;
 mod patterns;
 mod geometry;
 mod generators;
+mod pin;
 mod svg;
 mod text;
 

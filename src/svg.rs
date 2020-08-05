@@ -9,6 +9,12 @@ pub enum SvgRectIdAttrs {
     VAlign = 2,
 }
 
+pub enum SvgPinIdAttrs {
+    Id = 0,
+    HAlign = 1,
+    VAlign = 2,
+}
+
 #[derive(Debug)]
 pub enum SvgHAlign {
     Left,
