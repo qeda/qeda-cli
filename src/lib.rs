@@ -7,18 +7,18 @@ mod cli;
 #[macro_use]
 mod macros;
 
-pub mod library;
 pub mod config;
 pub mod drawing;
+pub mod library;
 
-mod errors;
 mod component;
-mod symbols;
-mod patterns;
-mod geometry;
+mod errors;
 mod generators;
+mod geometry;
+mod patterns;
 mod pin;
 mod svg;
+mod symbols;
 mod text;
 
 pub use errors::Result;

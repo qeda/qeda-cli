@@ -3,9 +3,9 @@ mod chip;
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
 
-use crate::errors::*;
 use crate::config::Config;
 use crate::drawing::Drawing;
+use crate::errors::*;
 
 use chip::ChipPattern;
 
@@ -24,17 +24,17 @@ pub struct Patterns<'a> {
     handlers: HashMap<&'a str, Box<dyn PatternHandler>>,
 }
 
-impl<'a> Patterns<'a>  {
+impl<'a> Patterns<'a> {
     pub fn new() -> Patterns<'a> {
         let mut handlers: HashMap<&'a str, Box<dyn PatternHandler>> = HashMap::new();
         handlers.insert("chip", Box::new(ChipPattern::new()));
 
-        Patterns {
-            handlers,
-        }
+        Patterns { handlers }
     }
 
     pub fn get_handler(&self, key: &str) -> Result<&Box<dyn PatternHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidPatternType(key.to_string()).into())
+        self.handlers
+            .get(key)
+            .ok_or(ErrorKind::InvalidPatternType(key.to_string()).into())
     }
 }

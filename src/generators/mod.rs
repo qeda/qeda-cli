@@ -19,12 +19,12 @@ impl<'a> Generators<'a> {
         let mut handlers: HashMap<&'a str, Box<dyn GeneratorHandler>> = HashMap::new();
         handlers.insert("kicad", Box::new(KicadGenerator::new()));
 
-        Generators {
-            handlers,
-        }
+        Generators { handlers }
     }
 
     pub fn get(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidGeneratorType(key.to_string()).into())
+        self.handlers
+            .get(key)
+            .ok_or(ErrorKind::InvalidGeneratorType(key.to_string()).into())
     }
 }

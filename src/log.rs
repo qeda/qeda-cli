@@ -1,9 +1,9 @@
 #![allow(unused_macros)]
 #![allow(dead_code)]
 
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use std::fmt;
 use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 macro_rules! warn {
     ( $ ( $ arg : tt ) * ) => ( $crate::log::warn_fmt ( format_args ! ( $ ( $ arg ) * ) ) )

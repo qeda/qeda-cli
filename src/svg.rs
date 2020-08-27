@@ -23,7 +23,9 @@ pub enum SvgHAlign {
 }
 
 impl Default for SvgHAlign {
-    fn default() -> Self { SvgHAlign::Left }
+    fn default() -> Self {
+        SvgHAlign::Left
+    }
 }
 
 #[derive(Debug)]
@@ -34,7 +36,9 @@ pub enum SvgVAlign {
 }
 
 impl Default for SvgVAlign {
-    fn default() -> Self { SvgVAlign::Bottom }
+    fn default() -> Self {
+        SvgVAlign::Bottom
+    }
 }
 
 #[derive(Clone, Default, Debug)]
@@ -182,17 +186,18 @@ impl Svg {
                     } else {
                         self.elements.insert(path_id, SvgElement::Polygon(polygon));
                     }
-                },
+                }
                 ElementId::Rect => {
                     let rect_id = node.id().to_string();
                     let rect = self.to_rect(&node.attributes())?;
                     self.elements.insert(rect_id, SvgElement::Rect(rect));
-                },
+                }
                 ElementId::Ellipse => {
                     let ellipse_id = node.id().to_string();
                     let ellipse = self.to_ellipse(&node.attributes())?;
-                    self.elements.insert(ellipse_id, SvgElement::Ellipse(ellipse));
-                },
+                    self.elements
+                        .insert(ellipse_id, SvgElement::Ellipse(ellipse));
+                }
                 ElementId::Text => {
                     let text_id = node.id().to_string();
                     let mut text = self.to_text(&node.attributes())?;
@@ -214,11 +219,10 @@ impl Svg {
                             } else if child.is_text() {
                                 text.text = child.text().to_string();
                             }
-
                         }
                     }
                     self.elements.insert(text_id, SvgElement::Text(text));
-                },
+                }
                 _ => (),
             }
         }
@@ -248,30 +252,30 @@ impl Svg {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.cx = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Cy => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.cy = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Rx => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.rx = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Ry => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.ry = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.line_width = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Fill => {
                     ellipse.filled = attr.value != AttributeValue::None;
-                },
+                }
                 _ => (),
             }
         }
@@ -281,57 +285,69 @@ impl Svg {
     fn to_polygon(&mut self, attributes: &Attributes) -> Result<SvgPolygon> {
         let mut polygon = SvgPolygon::default();
         for attr in attributes.iter() {
-                match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
-                    AttributeId::D => {
-                        if let AttributeValue::Path(ref path) = attr.value {
-                            for command in path.iter() {
-                                match command {
-                                    PathSegment::MoveTo { abs, x, y } |
-                                    PathSegment::LineTo { abs, x, y } => {
-                                        let mut x = *x;
-                                        let mut y = *y;
-                                        if !abs {
-                                            x += self.current_x;
-                                            y += self.current_y;
-                                        }
-                                        self.current_x = x;
-                                        self.current_y = y;
-                                        polygon.p.push(SvgPoint { x, y, marker: false });
-                                    },
-                                    PathSegment::HorizontalLineTo { abs, x } => {
-                                        let mut x = *x;
-                                        let y = self.current_y;
-                                        if !abs {
-                                            x += self.current_x;
-                                        }
-                                        self.current_x = x;
-                                        polygon.p.push(SvgPoint { x, y, marker: false });
-                                    },
-                                    PathSegment::VerticalLineTo { abs, y } => {
-                                        let x = self.current_x;
-                                        let mut y = *y;
-                                        if !abs {
-                                            y += self.current_y;
-                                        }
-                                        self.current_y = y;
-                                        polygon.p.push(SvgPoint { x, y, marker: false });
-                                    },
-                                    _ => (),
+            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+                AttributeId::D => {
+                    if let AttributeValue::Path(ref path) = attr.value {
+                        for command in path.iter() {
+                            match command {
+                                PathSegment::MoveTo { abs, x, y }
+                                | PathSegment::LineTo { abs, x, y } => {
+                                    let mut x = *x;
+                                    let mut y = *y;
+                                    if !abs {
+                                        x += self.current_x;
+                                        y += self.current_y;
+                                    }
+                                    self.current_x = x;
+                                    self.current_y = y;
+                                    polygon.p.push(SvgPoint {
+                                        x,
+                                        y,
+                                        marker: false,
+                                    });
                                 }
+                                PathSegment::HorizontalLineTo { abs, x } => {
+                                    let mut x = *x;
+                                    let y = self.current_y;
+                                    if !abs {
+                                        x += self.current_x;
+                                    }
+                                    self.current_x = x;
+                                    polygon.p.push(SvgPoint {
+                                        x,
+                                        y,
+                                        marker: false,
+                                    });
+                                }
+                                PathSegment::VerticalLineTo { abs, y } => {
+                                    let x = self.current_x;
+                                    let mut y = *y;
+                                    if !abs {
+                                        y += self.current_y;
+                                    }
+                                    self.current_y = y;
+                                    polygon.p.push(SvgPoint {
+                                        x,
+                                        y,
+                                        marker: false,
+                                    });
+                                }
+                                _ => (),
                             }
                         }
-                    },
-                    AttributeId::StrokeWidth => {
-                        if let AttributeValue::Length(ref len) = attr.value {
-                            polygon.line_width = Svg::convert_units(&len)?;
-                        }
-                    },
-                    AttributeId::Fill => {
-                        polygon.filled = attr.value != AttributeValue::None;
-                    },
-                    _ => (),
+                    }
                 }
+                AttributeId::StrokeWidth => {
+                    if let AttributeValue::Length(ref len) = attr.value {
+                        polygon.line_width = Svg::convert_units(&len)?;
+                    }
+                }
+                AttributeId::Fill => {
+                    polygon.filled = attr.value != AttributeValue::None;
+                }
+                _ => (),
             }
+        }
         Ok(polygon)
     }
 
@@ -343,30 +359,30 @@ impl Svg {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.x = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Y => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.y = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Width => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.width = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Height => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.height = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.line_width = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::Fill => {
                     rect.filled = attr.value != AttributeValue::None;
-                },
+                }
                 _ => (),
             }
         }
@@ -381,22 +397,22 @@ impl Svg {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
                         text.x = Svg::convert_units(&len_list.first().unwrap())?;
                     }
-                },
+                }
                 AttributeId::Y => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
                         text.y = Svg::convert_units(&len_list.first().unwrap())?;
                     }
-                },
+                }
                 AttributeId::FontSize => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         text.height = Svg::convert_units(&len)?;
                     }
-                },
+                }
                 AttributeId::TextAnchor => {
                     if let AttributeValue::String(ref string) = attr.value {
                         text.halign = match string.as_ref() {
                             "middle" => SvgHAlign::Center,
-                            "end"    => SvgHAlign::Right,
+                            "end" => SvgHAlign::Right,
                             _ => SvgHAlign::default(),
                         }
                     }
@@ -404,12 +420,12 @@ impl Svg {
                 AttributeId::DominantBaseline => {
                     if let AttributeValue::String(ref string) = attr.value {
                         text.valign = match string.as_ref() {
-                            "middle"           => SvgVAlign::Middle,
+                            "middle" => SvgVAlign::Middle,
                             "text-before-edge" => SvgVAlign::Top,
                             _ => SvgVAlign::default(),
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }

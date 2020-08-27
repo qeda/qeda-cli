@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use regex::Regex;
+use std::collections::HashMap;
 
 use crate::errors::*;
 use crate::geometry::*;
-use crate::text::*;
 use crate::pin::*;
 use crate::svg::{self, *};
+use crate::text::*;
 
 #[derive(Debug)]
 pub enum Element {
@@ -51,11 +51,11 @@ impl Drawing {
         let mut dx = 0.0;
         let mut dy = 0.0;
         if let Some(SvgElement::HLine(ch)) = elements.remove("ch") {
-            sx = 1.0/ch.len();
+            sx = 1.0 / ch.len();
             dx = -ch.cx();
         }
         if let Some(SvgElement::VLine(cv)) = elements.remove("cv") {
-            sy = 1.0/cv.len();
+            sy = 1.0 / cv.len();
             dy = -cv.cy();
         }
         self.canvas_transform.translate(dx, dy);
@@ -71,16 +71,16 @@ impl Drawing {
                     } else {
                         self.add_line(line.x0, line.y, line.x1, line.y, line.width)
                     }
-                },
+                }
                 SvgElement::VLine(line) => {
                     if key.starts_with("pin") {
                         self.add_pin(&key, line.x, line.y0, line.x, line.y1)
                     } else {
                         self.add_line(line.x, line.y0, line.x, line.y1, line.width)
                     }
-                },
+                }
                 SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
-                _ => ()
+                _ => (),
             }
         }
         debug!("Elements: {:?}", &self.elements());
@@ -109,7 +109,10 @@ impl Drawing {
     fn add_textbox(&mut self, key: &String, rect: &SvgRect) {
         let id_attrs: Vec<&str> = key.split(':').collect();
 
-        let id = id_attrs.get(SvgRectIdAttrs::Id as usize).unwrap_or(&"").to_string();
+        let id = id_attrs
+            .get(SvgRectIdAttrs::Id as usize)
+            .unwrap_or(&"")
+            .to_string();
         let halign = HAlign::from_attr(id_attrs.get(SvgRectIdAttrs::HAlign as usize));
         let valign = VAlign::from_attr(id_attrs.get(SvgRectIdAttrs::VAlign as usize));
 
@@ -137,14 +140,22 @@ impl Drawing {
 
         let id = *id_attrs.get(SvgPinIdAttrs::Id as usize).unwrap_or(&"");
         let net_regex = Regex::new(r"^(pin)?\-?(?P<net>.*)$").unwrap();
-        let net = net_regex.captures(id).unwrap().name("net").unwrap().as_str();
+        let net = net_regex
+            .captures(id)
+            .unwrap()
+            .name("net")
+            .unwrap()
+            .as_str();
 
         let halign = HAlign::from_attr(id_attrs.get(SvgPinIdAttrs::HAlign as usize));
         let valign = VAlign::from_attr(id_attrs.get(SvgPinIdAttrs::VAlign as usize));
 
         let p0 = Point { x: x0, y: y0 };
         let p1 = Point { x: x1, y: y1 };
-        let mut line = Line { p: (p0, p1), width: 0. };
+        let mut line = Line {
+            p: (p0, p1),
+            width: 0.,
+        };
         line.transform(&self.canvas_transform);
 
         let pin = Pin::new(&net, halign, valign, &line);

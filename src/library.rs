@@ -3,12 +3,12 @@ use std::path::Path;
 use std::str;
 use std::time::Duration;
 
-use crate::errors::*;
-use crate::config::Config;
-use crate::symbols::Symbols;
-use crate::patterns::Patterns;
 use crate::component::Component;
+use crate::config::Config;
+use crate::errors::*;
 use crate::generators::Generators;
+use crate::patterns::Patterns;
+use crate::symbols::Symbols;
 
 const ID_SEPARATOR: &str = "/";
 const QEDALIB_DIR: &str = "qedalib";
@@ -60,7 +60,7 @@ impl<'a> Library<'a> {
     /// ```
     pub fn from_config(config: &Config) -> Result<Library> {
         let mut lib = Library::new();
-        lib.merge_config_with(config);
+        lib.merge_config(config);
         let components_hash = config.get_hash("components")?;
         let keys = components_hash.keys();
         for key in keys {
@@ -120,7 +120,9 @@ impl<'a> Library<'a> {
         }
         url += &self.file_path(&id);
         debug!("URL: {}", url);
-        let component_yaml = self.get_url_contents(&url).chain_err(|| "component loading failed")?;
+        let component_yaml = self
+            .get_url_contents(&url)
+            .chain_err(|| "component loading failed")?;
         let component = self.parse_component(&id, &component_yaml)?;
 
         let dir = self.local_dir(&id);
@@ -191,8 +193,8 @@ impl<'a> Library<'a> {
         }
     }
 
-    fn merge_config_with(&mut self, config: &Config) {
-        self.config.merge_with(config);
+    fn merge_config(&mut self, config: &Config) {
+        self.config.merge(config);
     }
 
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {

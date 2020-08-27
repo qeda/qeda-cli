@@ -18,15 +18,19 @@ impl Pinout {
             for (pin, numbers) in config_pinout {
                 if let Yaml::String(pin) = pin {
                     let numbers = match numbers {
-                        Yaml::Integer(number) => vec!(number.to_string()),
-                        Yaml::Array(numbers) => numbers.iter().filter_map(
-                            |number| match number {
+                        Yaml::Integer(number) => vec![number.to_string()],
+                        Yaml::Array(numbers) => numbers
+                            .iter()
+                            .filter_map(|number| match number {
                                 Yaml::Integer(number) => Some(number.to_string()),
                                 _ => None,
-                            }
-                        ).collect(),
-                        Yaml::String(numbers) => numbers.split(',').map(|number| number.to_string()).collect(),
-                        _ => vec!(),
+                            })
+                            .collect(),
+                        Yaml::String(numbers) => numbers
+                            .split(',')
+                            .map(|number| number.to_string())
+                            .collect(),
+                        _ => vec![],
                     };
                     pinout.pins.insert(pin.to_string(), numbers);
                 }
@@ -37,9 +41,9 @@ impl Pinout {
 
     pub fn add_default(&mut self, pin: &str, number: &str) {
         if self.pins.contains_key(pin) {
-            return
+            return;
         }
-        self.pins.insert(pin.to_string(), vec!(number.to_string()));
+        self.pins.insert(pin.to_string(), vec![number.to_string()]);
     }
 
     pub fn apply_to(&self, elements: &mut Vec<Element>) {

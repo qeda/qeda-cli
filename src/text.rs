@@ -7,7 +7,9 @@ pub enum Orientation {
 }
 
 impl Default for Orientation {
-    fn default() -> Self { Orientation::Horizontal }
+    fn default() -> Self {
+        Orientation::Horizontal
+    }
 }
 
 #[derive(Debug)]
@@ -37,7 +39,9 @@ impl HAlign {
 }
 
 impl Default for HAlign {
-    fn default() -> Self { HAlign::Left }
+    fn default() -> Self {
+        HAlign::Left
+    }
 }
 
 #[derive(Debug)]
@@ -67,7 +71,9 @@ impl VAlign {
 }
 
 impl Default for VAlign {
-    fn default() -> Self { VAlign::Center }
+    fn default() -> Self {
+        VAlign::Center
+    }
 }
 
 #[derive(Debug)]
@@ -77,7 +83,9 @@ pub enum Visibility {
 }
 
 impl Default for Visibility {
-    fn default() -> Self { Visibility::Visible }
+    fn default() -> Self {
+        Visibility::Visible
+    }
 }
 
 #[derive(Default, Debug)]

@@ -1,8 +1,8 @@
-use crate::errors::*;
 use crate::config::Config;
 use crate::drawing::Drawing;
-use crate::symbols::Symbols;
+use crate::errors::*;
 use crate::patterns::Patterns;
+use crate::symbols::Symbols;
 
 #[derive(Debug)]
 pub struct Component {
@@ -13,7 +13,11 @@ pub struct Component {
 }
 
 impl Component {
-    pub fn from_config(config: &Config, symbols: &Symbols, patterns: &Patterns) -> Result<Component> {
+    pub fn from_config(
+        config: &Config,
+        symbols: &Symbols,
+        patterns: &Patterns,
+    ) -> Result<Component> {
         let name = config.get_string("name")?;
         let symbol_handler = symbols.get_handler(&config.get_string("symbol.type")?)?;
         let symbol = symbol_handler.draw(&config)?;
@@ -24,7 +28,7 @@ impl Component {
             name,
             symbol,
             pattern,
-            digest
+            digest,
         })
     }
 

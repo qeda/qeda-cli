@@ -3,8 +3,8 @@ use std::path::Path;
 
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
 
-use crate::errors::*;
 use crate::config::Config;
+use crate::errors::*;
 use crate::library::Library;
 
 const QEDA_YML: &'static str = ".qeda.yml";
@@ -159,8 +159,7 @@ fn reset() -> Result<()> {
     if !Path::new(QEDA_YML).exists() {
         warn!("nothing to remove");
     } else {
-        fs::remove_file(QEDA_YML)
-            .chain_err(|| "unable to remove")?;
+        fs::remove_file(QEDA_YML).chain_err(|| "unable to remove")?;
     }
     Ok(())
 }

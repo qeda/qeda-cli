@@ -1,4 +1,5 @@
-#[macro_use] mod log;
+#[macro_use]
+mod log;
 
 fn main() {
     debug!("running QEDA in debug mode");

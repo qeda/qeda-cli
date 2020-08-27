@@ -55,11 +55,9 @@ pub struct Pin {
 impl Pin {
     pub fn new(net: &str, halign: HAlign, valign: VAlign, l: &Line) -> Self {
         let orientation = match halign {
-            HAlign::Center => {
-                match valign {
-                    VAlign::Top => PinOrientation::Down,
-                    _ => PinOrientation::Up,
-                }
+            HAlign::Center => match valign {
+                VAlign::Top => PinOrientation::Down,
+                _ => PinOrientation::Up,
             },
             HAlign::Left => PinOrientation::Right,
             HAlign::Right => PinOrientation::Left,

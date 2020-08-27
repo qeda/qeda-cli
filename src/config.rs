@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crypto_hash::{Algorithm, Hasher};
 use hex;
-use yaml_rust::{yaml, Yaml, YamlLoader, YamlEmitter};
+use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
 use crate::errors::*;
 
@@ -42,7 +42,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_element(&self, key: &str)-> Result<&Yaml> {
+    pub fn get_element(&self, key: &str) -> Result<&Yaml> {
         let keys: Vec<&str> = key.split(".").collect();
         let mut element = &self.yaml[keys[0]];
         for key in &keys[1..] {
@@ -55,52 +55,63 @@ impl Config {
         }
     }
 
-    pub fn get_hash(&self, key: &str)-> Result<&yaml::Hash> {
-        Ok(self.get_element(key)?
+    pub fn get_hash(&self, key: &str) -> Result<&yaml::Hash> {
+        Ok(self
+            .get_element(key)?
             .as_hash()
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "hash".to_string()))?
-        )
+            .ok_or(ErrorKind::InvalidElementType(
+                key.to_string(),
+                "hash".to_string(),
+            ))?)
     }
 
-    pub fn get_string(&self, key: &str)-> Result<String> {
-        Ok(self.get_element(key)?
+    pub fn get_string(&self, key: &str) -> Result<String> {
+        Ok(self
+            .get_element(key)?
             .as_str()
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "string".to_string()))?
-            .to_string()
-        )
+            .ok_or(ErrorKind::InvalidElementType(
+                key.to_string(),
+                "string".to_string(),
+            ))?
+            .to_string())
     }
 
-    pub fn get_i64(&self, key: &str)-> Result<i64> {
-        Ok(self.get_element(key)?
+    pub fn get_i64(&self, key: &str) -> Result<i64> {
+        Ok(self
+            .get_element(key)?
             .as_i64()
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "integer".to_string()))?
-        )
+            .ok_or(ErrorKind::InvalidElementType(
+                key.to_string(),
+                "integer".to_string(),
+            ))?)
     }
 
-    pub fn get_u64(&self, key: &str)-> Result<u64> {
-        Ok(self.get_element(key)?
+    pub fn get_u64(&self, key: &str) -> Result<u64> {
+        Ok(self
+            .get_element(key)?
             .as_i64()
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "integer".to_string()))?
-            as u64
-        )
+            .ok_or(ErrorKind::InvalidElementType(
+                key.to_string(),
+                "integer".to_string(),
+            ))? as u64)
     }
 
-    pub fn get_f64(&self, key: &str)-> Result<f64> {
+    pub fn get_f64(&self, key: &str) -> Result<f64> {
         let value = self.get_element(key)?;
-        Ok(value.as_f64()
-            .or(
-                value.as_i64()
-                .and_then(|v| Some(v as f64))
-            )
-            .ok_or(ErrorKind::InvalidElementType(key.to_string(), "float".to_string()))?
-        )
+        Ok(value
+            .as_f64()
+            .or(value.as_i64().and_then(|v| Some(v as f64)))
+            .ok_or(ErrorKind::InvalidElementType(
+                key.to_string(),
+                "float".to_string(),
+            ))?)
     }
 
     pub fn insert_vec_if_missing(&mut self, key: &str) {
         let mut hash = self.yaml_into_hash();
         let key = Yaml::from_str(key);
         if !hash.contains_key(&key) || !hash[&key].is_array() {
-            hash.insert(key, Yaml::Array(vec!()));
+            hash.insert(key, Yaml::Array(vec![]));
         }
         self.yaml = Yaml::Hash(hash);
     }
@@ -148,8 +159,8 @@ impl Config {
         hex::encode(hasher.finish())
     }
 
-    pub fn merge_with(&mut self, _from: &Config) {
-
+    pub fn merge(&mut self, _from: &Config) {
+        todo!();
     }
 }
 
@@ -167,19 +178,19 @@ impl Config {
             Yaml::Boolean(b) => {
                 let b = *b as u8;
                 hasher.write_all(&b.to_le_bytes()).unwrap()
-            },
+            }
             Yaml::Array(a) => {
                 for e in a {
                     self.update_digest(e, hasher);
                 }
-            },
-            Yaml::Hash(h)=> {
+            }
+            Yaml::Hash(h) => {
                 let keys = h.keys();
                 for key in keys {
                     hasher.write_all(key.as_str().unwrap().as_bytes()).unwrap();
                     self.update_digest(h.get(key).unwrap(), hasher);
                 }
-            },
+            }
             Yaml::Alias(u) => hasher.write_all(&u.to_le_bytes()).unwrap(),
             _ => (),
         }

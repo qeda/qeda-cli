@@ -4,9 +4,9 @@ mod pinout;
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
 
-use crate::errors::*;
 use crate::config::Config;
 use crate::drawing::Drawing;
+use crate::errors::*;
 
 use capacitor::CapacitorSymbol;
 
@@ -30,12 +30,12 @@ impl<'a> Symbols<'a> {
         let mut handlers: HashMap<&'a str, Box<dyn SymbolHandler>> = HashMap::new();
         handlers.insert("capacitor", Box::new(CapacitorSymbol::new()));
 
-        Symbols {
-            handlers,
-        }
+        Symbols { handlers }
     }
 
     pub fn get_handler(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
-        self.handlers.get(key).ok_or(ErrorKind::InvalidSymbolType(key.to_string()).into())
+        self.handlers
+            .get(key)
+            .ok_or(ErrorKind::InvalidSymbolType(key.to_string()).into())
     }
 }

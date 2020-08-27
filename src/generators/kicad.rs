@@ -3,14 +3,14 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 
-use crate::errors::*;
 use crate::config::Config;
-use crate::library::Library;
+use crate::drawing::{Drawing, Element};
+use crate::errors::*;
 use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
-use crate::drawing::{Element, Drawing};
-use crate::text::*;
+use crate::library::Library;
 use crate::pin::*;
+use crate::text::*;
 
 const KICADLIB_DIR: &str = "kicadlib";
 
@@ -25,7 +25,7 @@ impl KicadGenerator {
 impl GeneratorHandler for KicadGenerator {
     fn render(&self, name: &str, library: &Library) -> Result<()> {
         info!("rendering KiCad symbol library: '{}.lib'", name);
-        fs::create_dir_all( KICADLIB_DIR)?;
+        fs::create_dir_all(KICADLIB_DIR)?;
         self.render_symbols(name, library)?;
 
         info!("rendering KiCad pattern library: '{}.pretty'", name);
@@ -94,9 +94,9 @@ impl fmt::Display for Orientation {
 impl fmt::Display for HAlign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            HAlign::Left   => write!(f, "L"),
+            HAlign::Left => write!(f, "L"),
             HAlign::Center => write!(f, "C"),
-            HAlign::Right  => write!(f, "R"),
+            HAlign::Right => write!(f, "R"),
         }
     }
 }
@@ -104,7 +104,7 @@ impl fmt::Display for HAlign {
 impl fmt::Display for VAlign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            VAlign::Top    => write!(f, "T"),
+            VAlign::Top => write!(f, "T"),
             VAlign::Center => write!(f, "C"),
             VAlign::Bottom => write!(f, "B"),
         }
@@ -115,7 +115,7 @@ impl fmt::Display for Visibility {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Visibility::Visible => write!(f, "V"),
-            Visibility::Hidden  => write!(f, "H"),
+            Visibility::Hidden => write!(f, "H"),
         }
     }
 }
@@ -181,7 +181,7 @@ impl KicadGenerator {
                 &mut f,
                 &ref_des.as_str(),
                 &component.name().as_str(),
-                &symbol
+                &symbol,
             )?;
 
             let elements = symbol.elements();
@@ -195,7 +195,7 @@ impl KicadGenerator {
                     &ref_des.as_str(),
                     &component.name().as_str(),
                     &params,
-                    &text_box
+                    &text_box,
                 )?;
             }
 
@@ -226,7 +226,7 @@ impl KicadGenerator {
                     posy = p.y.round(),
                     length = (pin.length * params.grid).round(),
                     orientation = pin.orientation,
-                    snum = params.font_size.pin, // pin number text size
+                    snum = params.font_size.pin,  // pin number text size
                     snom = params.font_size.name, // pin name text size
                     unit = 0, // 0 if common to all parts. If not, number of the part (1. .n)
                     convert = 0, // 0 if common to the representations, if not 1 or 2
@@ -237,8 +237,11 @@ impl KicadGenerator {
                     },
                     shape = pin.shape,
                 )?;
-                debug!("Pin: {}, {}, ({}, {})", pin.net, pin.number, pin.pos.x, pin.pos.y);
-            },
+                debug!(
+                    "Pin: {}, {}, ({}, {})",
+                    pin.net, pin.number, pin.pos.x, pin.pos.y
+                );
+            }
             Element::Line(l) => {
                 let mut l = l.clone();
                 l.scale(params.grid, params.grid);
@@ -247,15 +250,17 @@ impl KicadGenerator {
                     "P {points_number} {unit} {convert} {thickness} {x1} {y1} {x2} {y2} N\n",
                     points_number = 2,
                     unit = 0, // 0 if common to the parts; if not, number of part
-                        // TODO: Replace "unit" by attribute
+                    // TODO: Replace "unit" by attribute
                     convert = 1, // 0 if common to the 2 representations, if not 1 or 2
                     thickness = l.width.round(),
-                    x1 = l.p.0.x.round(), y1 = l.p.0.y.round(),
-                    x2 = l.p.1.x.round(), y2 = l.p.1.y.round(),
+                    x1 = l.p.0.x.round(),
+                    y1 = l.p.0.y.round(),
+                    x2 = l.p.1.x.round(),
+                    y2 = l.p.1.y.round(),
                 )?;
                 debug!("Line: {}, {}, {}, {}", l.p.0.x, l.p.0.y, l.p.1.x, l.p.1.y);
-            },
-            _ => {},
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -273,7 +278,7 @@ impl KicadGenerator {
              {unit_count} {units_locked} {option_flag}\n",
             name = name,
             reference = ref_des,
-            unused = 0, // Required by specification to be zero
+            unused = 0,      // Required by specification to be zero
             text_offset = 5, // Space. TODO: Replace by attribute
             draw_pinnumber = symbol.attr("show_pin_numbers", "N"),
             draw_pinname = symbol.attr("show_pin_names", "N"),
