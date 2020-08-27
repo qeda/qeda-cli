@@ -5,7 +5,7 @@ use std::io::prelude::*;
 
 use crate::config::Config;
 use crate::drawing::{Drawing, Element};
-use crate::errors::*;
+use crate::error::*;
 use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
 use crate::library::Library;

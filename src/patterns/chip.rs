@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::drawing::Drawing;
-use crate::errors::*;
+use crate::error::*;
 use crate::patterns::PatternHandler;
 
 pub struct ChipPattern {}

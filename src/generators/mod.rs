@@ -2,7 +2,7 @@ mod kicad;
 
 use std::collections::HashMap;
 
-use crate::errors::*;
+use crate::error::*;
 use crate::library::Library;
 use kicad::KicadGenerator;
 
@@ -25,6 +25,6 @@ impl<'a> Generators<'a> {
     pub fn get(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
         self.handlers
             .get(key)
-            .ok_or(ErrorKind::InvalidGeneratorType(key.to_string()).into())
+            .ok_or(QedaError::InvalidGeneratorType(key.to_string()).into())
     }
 }

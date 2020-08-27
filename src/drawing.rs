@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use crate::errors::*;
+use crate::error::*;
 use crate::geometry::*;
 use crate::pin::*;
 use crate::svg::{self, *};
@@ -125,7 +125,7 @@ impl Drawing {
         let textbox = TextBox {
             x: p.x,
             y: p.y,
-            // TODO: extract info from attributes/id
+            // TODO: Extract info from attributes/id
             orientation: Orientation::Horizontal,
             visibility: Visibility::Visible,
             halign: halign,

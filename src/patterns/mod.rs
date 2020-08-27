@@ -5,7 +5,7 @@ use std::fmt::{self, Debug};
 
 use crate::config::Config;
 use crate::drawing::Drawing;
-use crate::errors::*;
+use crate::error::*;
 
 use chip::ChipPattern;
 
@@ -35,6 +35,6 @@ impl<'a> Patterns<'a> {
     pub fn get_handler(&self, key: &str) -> Result<&Box<dyn PatternHandler>> {
         self.handlers
             .get(key)
-            .ok_or(ErrorKind::InvalidPatternType(key.to_string()).into())
+            .ok_or(QedaError::InvalidPatternType(key.to_string()).into())
     }
 }

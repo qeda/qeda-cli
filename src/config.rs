@@ -6,7 +6,7 @@ use crypto_hash::{Algorithm, Hasher};
 use hex;
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
-use crate::errors::*;
+use crate::error::*;
 
 #[derive(Debug)]
 pub struct Config {
@@ -26,13 +26,10 @@ impl Config {
 
     pub fn from_str(yaml: &str) -> Result<Config> {
         let mut docs = YamlLoader::load_from_str(yaml)?;
-        if docs.len() > 0 {
-            Ok(Config {
-                yaml: docs.pop().unwrap(),
-            })
-        } else {
-            Err(ErrorKind::InvalidConfig.into())
-        }
+        ensure!(docs.len() > 0, QedaError::InvalidConfig);
+        Ok(Config {
+            yaml: docs.pop().unwrap(),
+        })
     }
 
     pub fn create_if_missing(path: &str) -> Result<()> {
@@ -49,7 +46,7 @@ impl Config {
             element = &element[*key];
         }
         if element.is_badvalue() {
-            Err(ErrorKind::MissingElement(key.to_string()).into())
+            Err(QedaError::MissingElement(key.to_string()).into())
         } else {
             Ok(element)
         }
@@ -59,20 +56,14 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_hash()
-            .ok_or(ErrorKind::InvalidElementType(
-                key.to_string(),
-                "hash".to_string(),
-            ))?)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "hash"))?)
     }
 
     pub fn get_string(&self, key: &str) -> Result<String> {
         Ok(self
             .get_element(key)?
             .as_str()
-            .ok_or(ErrorKind::InvalidElementType(
-                key.to_string(),
-                "string".to_string(),
-            ))?
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "string"))?
             .to_string())
     }
 
@@ -80,20 +71,14 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_i64()
-            .ok_or(ErrorKind::InvalidElementType(
-                key.to_string(),
-                "integer".to_string(),
-            ))?)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "integer"))?)
     }
 
     pub fn get_u64(&self, key: &str) -> Result<u64> {
         Ok(self
             .get_element(key)?
             .as_i64()
-            .ok_or(ErrorKind::InvalidElementType(
-                key.to_string(),
-                "integer".to_string(),
-            ))? as u64)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "integer"))? as u64)
     }
 
     pub fn get_f64(&self, key: &str) -> Result<f64> {
@@ -101,10 +86,7 @@ impl Config {
         Ok(value
             .as_f64()
             .or(value.as_i64().and_then(|v| Some(v as f64)))
-            .ok_or(ErrorKind::InvalidElementType(
-                key.to_string(),
-                "float".to_string(),
-            ))?)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "float"))?)
     }
 
     pub fn insert_vec_if_missing(&mut self, key: &str) {
@@ -160,7 +142,7 @@ impl Config {
     }
 
     pub fn merge(&mut self, _from: &Config) {
-        todo!();
+        // TODO: Implement
     }
 }
 

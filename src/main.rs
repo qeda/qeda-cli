@@ -5,9 +5,7 @@ fn main() {
     debug!("running QEDA in debug mode");
     if let Err(e) = qeda::run_cli() {
         err!("{}", e);
-        for e in e.iter().skip(1) {
-            errln!("{}", e);
-        }
+        e.chain().skip(1).for_each(|cause| errln!("{}", cause));
         std::process::exit(1);
     }
 }

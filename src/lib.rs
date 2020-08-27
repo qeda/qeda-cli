@@ -12,7 +12,7 @@ pub mod drawing;
 pub mod library;
 
 mod component;
-mod errors;
+mod error;
 mod generators;
 mod geometry;
 mod patterns;
@@ -21,7 +21,7 @@ mod svg;
 mod symbols;
 mod text;
 
-pub use errors::Result;
+pub use error::Result;
 
 pub fn run_cli() -> Result<()> {
     cli::run()

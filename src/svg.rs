@@ -1,7 +1,7 @@
 use linked_hash_map::LinkedHashMap;
 use svgdom::*;
 
-use crate::errors::*;
+use crate::error::*;
 
 pub enum SvgRectIdAttrs {
     Id = 0,
@@ -240,14 +240,14 @@ impl Svg {
             LengthUnit::None => Ok(len.num),
             LengthUnit::Mm => Ok(len.num),
             LengthUnit::Pt => Ok(len.num * 25.4 / 72.),
-            _ => Err(ErrorKind::UnsupportedSvgUnits(format!("{:?}", len.unit)).into()),
+            _ => Err(QedaError::UnsupportedSvgUnits(format!("{:?}", len.unit)).into()),
         }
     }
 
     fn to_ellipse(&mut self, attributes: &Attributes) -> Result<SvgEllipse> {
         let mut ellipse = SvgEllipse::default();
         for attr in attributes.iter() {
-            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+            match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::Cx => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         ellipse.cx = Svg::convert_units(&len)?;
@@ -285,7 +285,7 @@ impl Svg {
     fn to_polygon(&mut self, attributes: &Attributes) -> Result<SvgPolygon> {
         let mut polygon = SvgPolygon::default();
         for attr in attributes.iter() {
-            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+            match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::D => {
                     if let AttributeValue::Path(ref path) = attr.value {
                         for command in path.iter() {
@@ -354,7 +354,7 @@ impl Svg {
     fn to_rect(&mut self, attributes: &Attributes) -> Result<SvgRect> {
         let mut rect = SvgRect::default();
         for attr in attributes.iter() {
-            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+            match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::Length(ref len) = attr.value {
                         rect.x = Svg::convert_units(&len)?;
@@ -392,7 +392,7 @@ impl Svg {
     fn to_text(&mut self, attributes: &Attributes) -> Result<SvgText> {
         let mut text = SvgText::default();
         for attr in attributes.iter() {
-            match attr.id().ok_or(ErrorKind::InvalidSvgPath)? {
+            match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
                         text.x = Svg::convert_units(&len_list.first().unwrap())?;

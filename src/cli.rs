@@ -4,7 +4,7 @@ use std::path::Path;
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
 
 use crate::config::Config;
-use crate::errors::*;
+use crate::error::*;
 use crate::library::Library;
 
 const QEDA_YML: &'static str = ".qeda.yml";
@@ -145,9 +145,8 @@ fn configure(m: &ArgMatches) -> Result<()> {
 }
 
 fn generate(m: &ArgMatches) -> Result<()> {
-    if !Path::new(QEDA_YML).exists() {
-        return Err(ErrorKind::MissingConfigFile(QEDA_YML.to_string()).into());
-    }
+    ensure!(Path::new(QEDA_YML).exists(), QedaError::MissingConfigFile(QEDA_YML.to_string()));
+
     let config = Config::from_file(QEDA_YML)?;
     let lib = Library::from_config(&config)?;
     lib.generate(m.value_of("library").unwrap())?;
@@ -159,7 +158,7 @@ fn reset() -> Result<()> {
     if !Path::new(QEDA_YML).exists() {
         warn!("nothing to remove");
     } else {
-        fs::remove_file(QEDA_YML).chain_err(|| "unable to remove")?;
+        fs::remove_file(QEDA_YML).with_context(|| "unable to remove")?;
     }
     Ok(())
 }

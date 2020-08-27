@@ -14,13 +14,14 @@ name = "qeda"
 path = "src/lib.rs"
 
 [dependencies]
+anyhow = "1.0"
 clap = "2.33"
 crypto-hash = "0.3"
-error-chain = "0.12"
 hex = "0.4"
 linked-hash-map = "0.5"
 reqwest = { version = "0.10", features = ["blocking"] }
 svgdom = "0.18"
 termcolor = "1.1"
+thiserror = "1.0"
 yaml-rust = "0.4"
 regex = "1.3"

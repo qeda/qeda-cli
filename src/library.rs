@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crate::component::Component;
 use crate::config::Config;
-use crate::errors::*;
+use crate::error::*;
 use crate::generators::Generators;
 use crate::patterns::Patterns;
 use crate::symbols::Symbols;
@@ -122,7 +122,7 @@ impl<'a> Library<'a> {
         debug!("URL: {}", url);
         let component_yaml = self
             .get_url_contents(&url)
-            .chain_err(|| "component loading failed")?;
+            .with_context(|| "component loading failed")?;
         let component = self.parse_component(&id, &component_yaml)?;
 
         let dir = self.local_dir(&id);
