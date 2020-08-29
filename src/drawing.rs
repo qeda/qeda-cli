@@ -67,16 +67,20 @@ impl Drawing {
             match element {
                 SvgElement::HLine(line) => {
                     if key.starts_with("pin") {
-                        self.add_pin(&key, line.x0, line.y, line.x1, line.y)
+                        self.add_pin(&key, line.x0, line.y, line.x1, line.y);
                     } else {
-                        self.add_line(line.x0, line.y, line.x1, line.y, line.width)
+                        self.add_line(
+                            Line::new(line.x0, line.y, line.x1, line.y).width(line.width),
+                        );
                     }
                 }
                 SvgElement::VLine(line) => {
                     if key.starts_with("pin") {
-                        self.add_pin(&key, line.x, line.y0, line.x, line.y1)
+                        self.add_pin(&key, line.x, line.y0, line.x, line.y1);
                     } else {
-                        self.add_line(line.x, line.y0, line.x, line.y1, line.width)
+                        self.add_line(
+                            Line::new(line.x, line.y0, line.x, line.y1).width(line.width),
+                        );
                     }
                 }
                 SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
@@ -87,10 +91,7 @@ impl Drawing {
         Ok(())
     }
 
-    pub fn add_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, width: f64) {
-        let p0 = Point { x: x0, y: y0 };
-        let p1 = Point { x: x1, y: y1 };
-        let mut line = Line { p: (p0, p1), width };
+    pub fn add_line(&mut self, mut line: Line) {
         line.transform(&self.canvas_transform);
         self.elements.push(Element::Line(line));
     }

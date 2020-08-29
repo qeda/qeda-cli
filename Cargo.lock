@@ -586,6 +586,7 @@ name = "qeda"
 version = "0.0.4"
 dependencies = [
  "anyhow 1.0.32 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "crypto-hash 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",

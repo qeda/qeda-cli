@@ -120,47 +120,51 @@ impl fmt::Display for Visibility {
     }
 }
 
-impl fmt::Display for ElectricKind {
+impl fmt::Display for PinKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ElectricKind::Input => write!(f, "I"),
-            ElectricKind::Output => write!(f, "O"),
-            ElectricKind::Bidirectional => write!(f, "B"),
-            ElectricKind::Tristate => write!(f, "T"),
-            ElectricKind::Passive => write!(f, "P"),
-            ElectricKind::Unspecified => write!(f, "U"),
-            ElectricKind::PowerInput => write!(f, "W"),
-            ElectricKind::PowerOutput => write!(f, "w"),
-            ElectricKind::OpenCollector => write!(f, "C"),
-            ElectricKind::OpenEmitter => write!(f, "E"),
-            ElectricKind::NotConnected => write!(f, "N"),
+        match *self {
+            PinKind::UNSPECIFIED => write!(f, "U"),
+            PinKind::IN => write!(f, "I"),
+            PinKind::OUT => write!(f, "O"),
+            x if x == (PinKind::IN | PinKind::OUT) => write!(f, "B"),
+            PinKind::TRISTATE => write!(f, "T"),
+            PinKind::PASSIVE => write!(f, "P"),
+            PinKind::POWER => write!(f, "W"),
+            x if x == (PinKind::POWER | PinKind::IN) => write!(f, "W"),
+            x if x == (PinKind::POWER | PinKind::OUT) => write!(f, "w"),
+            PinKind::OPEN_COLLECTOR => write!(f, "C"),
+            PinKind::OPEN_EMITTER => write!(f, "E"),
+            PinKind::NOT_CONNECTED => write!(f, "N"),
+            _ => write!(f, "U"),
         }
     }
 }
 
 impl fmt::Display for PinShape {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            PinShape::Line => write!(f, ""),
-            PinShape::Inverted => write!(f, "I"),
-            PinShape::Clock => write!(f, "C"),
-            PinShape::InvertedClock => write!(f, "CI"),
-            PinShape::InputLow => write!(f, "L"),
-            PinShape::ClockLow => write!(f, "CL"),
-            PinShape::OutputLow => write!(f, "V"),
-            PinShape::FallingEdgeClock => write!(f, "F"),
-            PinShape::NonLogic => write!(f, "X"),
+        match *self {
+            PinShape::LINE => write!(f, ""),
+            PinShape::INVERTED => write!(f, "I"),
+            PinShape::CLOCK => write!(f, "C"),
+            x if x == (PinShape::INVERTED | PinShape::CLOCK) => write!(f, "CI"),
+            PinShape::IN | PinShape::LOW => write!(f, "L"),
+            x if x == (PinShape::CLOCK | PinShape::LOW) => write!(f, "CL"),
+            x if x == (PinShape::OUT | PinShape::LOW) => write!(f, "V"),
+            PinShape::FALLING_EDGE => write!(f, "F"),
+            x if x == (PinShape::FALLING_EDGE | PinShape::CLOCK) => write!(f, "F"),
+            PinShape::NON_LOGIC => write!(f, "X"),
+            _ => write!(f, ""),
         }
     }
 }
 
-impl fmt::Display for PinOrientation {
+impl fmt::Display for PinDirection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            PinOrientation::Up => write!(f, "U"),
-            PinOrientation::Down => write!(f, "D"),
-            PinOrientation::Right => write!(f, "R"),
-            PinOrientation::Left => write!(f, "L"),
+            PinDirection::Up => write!(f, "U"),
+            PinDirection::Down => write!(f, "D"),
+            PinDirection::Right => write!(f, "R"),
+            PinDirection::Left => write!(f, "L"),
         }
     }
 }
@@ -225,12 +229,12 @@ impl KicadGenerator {
                     posx = p.x.round(),
                     posy = p.y.round(),
                     length = (pin.length * params.grid).round(),
-                    orientation = pin.orientation,
+                    orientation = pin.direction,
                     snum = params.font_size.pin,  // pin number text size
                     snom = params.font_size.name, // pin name text size
                     unit = 0, // 0 if common to all parts. If not, number of the part (1. .n)
                     convert = 0, // 0 if common to the representations, if not 1 or 2
-                    etype = pin.ekind,
+                    etype = pin.kind,
                     visibility = match pin.visibility {
                         Visibility::Visible => "",
                         Visibility::Hidden => "N",

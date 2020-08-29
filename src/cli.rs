@@ -145,7 +145,10 @@ fn configure(m: &ArgMatches) -> Result<()> {
 }
 
 fn generate(m: &ArgMatches) -> Result<()> {
-    ensure!(Path::new(QEDA_YML).exists(), QedaError::MissingConfigFile(QEDA_YML.to_string()));
+    ensure!(
+        Path::new(QEDA_YML).exists(),
+        QedaError::MissingConfigFile(QEDA_YML.to_string())
+    );
 
     let config = Config::from_file(QEDA_YML)?;
     let lib = Library::from_config(&config)?;

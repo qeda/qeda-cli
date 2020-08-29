@@ -48,7 +48,7 @@ pub struct SvgPoint {
     pub marker: bool,
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct SvgLine {
     pub p: (SvgPoint, SvgPoint),
     pub width: f64,
@@ -250,27 +250,27 @@ impl Svg {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::Cx => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.cx = Svg::convert_units(&len)?;
+                        ellipse.cx = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Cy => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.cy = Svg::convert_units(&len)?;
+                        ellipse.cy = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Rx => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.rx = Svg::convert_units(&len)?;
+                        ellipse.rx = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Ry => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.ry = Svg::convert_units(&len)?;
+                        ellipse.ry = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.line_width = Svg::convert_units(&len)?;
+                        ellipse.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
@@ -339,7 +339,7 @@ impl Svg {
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        polygon.line_width = Svg::convert_units(&len)?;
+                        polygon.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
@@ -357,27 +357,27 @@ impl Svg {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.x = Svg::convert_units(&len)?;
+                        rect.x = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Y => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.y = Svg::convert_units(&len)?;
+                        rect.y = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Width => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.width = Svg::convert_units(&len)?;
+                        rect.width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Height => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.height = Svg::convert_units(&len)?;
+                        rect.height = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.line_width = Svg::convert_units(&len)?;
+                        rect.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
@@ -395,17 +395,17 @@ impl Svg {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
-                        text.x = Svg::convert_units(&len_list.first().unwrap())?;
+                        text.x = Svg::convert_units(len_list.first().unwrap())?;
                     }
                 }
                 AttributeId::Y => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
-                        text.y = Svg::convert_units(&len_list.first().unwrap())?;
+                        text.y = Svg::convert_units(len_list.first().unwrap())?;
                     }
                 }
                 AttributeId::FontSize => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        text.height = Svg::convert_units(&len)?;
+                        text.height = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::TextAnchor => {

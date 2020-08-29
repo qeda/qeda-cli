@@ -51,7 +51,7 @@ impl Pinout {
         for element in elements {
             if let Element::Pin(pin) = element {
                 if let Some(numbers) = self.pins.get(&pin.net) {
-                    let index = *pin_counter.get(&pin.net).unwrap_or(&(0 as usize));
+                    let index = *pin_counter.get(&pin.net).unwrap_or(&0usize);
                     pin.number = numbers.get(index).unwrap().to_string();
                     pin_counter.insert(&pin.net, index + 1);
                 }
