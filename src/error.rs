@@ -15,6 +15,20 @@ pub enum QedaError {
     #[error("invalid pattern type: '{0}'")]
     InvalidPatternType(String),
 
+    #[error(
+        "Invalid pin count, it should be the same at the both sides: 'count({0})' != 'count({1})'"
+    )]
+    InvalidPinCount(String, String),
+
+    #[error("invalid pin name: '{0}'")]
+    InvalidPinName(String),
+
+    #[error("invalid pin range '{0}', name base should be the same: '{1}' != '{2}'")]
+    InvalidPinRangeNameBase(String, String, String),
+
+    #[error("invalid pin number: '{0}'")]
+    InvalidPinNumber(String),
+
     #[error("invalid SVG path")]
     InvalidSvgPath,
 
