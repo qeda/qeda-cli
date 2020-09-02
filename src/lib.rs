@@ -17,11 +17,9 @@ mod error;
 mod generators;
 mod geometry;
 mod patterns;
-mod pin;
 mod pinout;
 mod svg;
 mod symbols;
-mod text;
 
 pub use error::Result;
 

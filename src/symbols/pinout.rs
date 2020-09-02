@@ -49,11 +49,11 @@ impl Pinout {
     pub fn apply_to(&self, elements: &mut Vec<Element>) {
         let mut pin_counter = HashMap::new();
         for element in elements {
-            if let Element::Pin(pin) = element {
-                if let Some(numbers) = self.pins.get(&pin.net) {
-                    let index = *pin_counter.get(&pin.net).unwrap_or(&0usize);
-                    pin.number = numbers.get(index).unwrap().to_string();
-                    pin_counter.insert(&pin.net, index + 1);
+            if let Element::SymbolPin(sym_pin) = element {
+                if let Some(numbers) = self.pins.get(&sym_pin.pin.name) {
+                    let index = *pin_counter.get(&sym_pin.pin.name).unwrap_or(&0usize);
+                    sym_pin.pin.number = numbers.get(index).unwrap().to_string();
+                    pin_counter.insert(&sym_pin.pin.name, index + 1);
                 }
             }
         }

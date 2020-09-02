@@ -76,25 +76,13 @@ impl Default for VAlign {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct Visibility(pub bool);
+
 #[derive(Debug)]
-pub enum Visibility {
-    Visible,
-    Hidden,
-}
-
-impl Default for Visibility {
-    fn default() -> Self {
-        Visibility::Visible
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct TextBox {
-    pub x: f64,
-    pub y: f64,
-    pub orientation: Orientation,
-    pub visibility: Visibility,
-    pub halign: HAlign,
-    pub valign: VAlign,
-    pub id: String,
+pub enum PinDirection {
+    Up,
+    Down,
+    Right,
+    Left,
 }

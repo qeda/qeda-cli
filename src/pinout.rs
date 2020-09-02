@@ -34,19 +34,11 @@ bitflags! {
 }
 
 #[derive(Debug)]
-pub enum PinDirection {
-    Up,
-    Down,
-    Right,
-    Left,
-}
-
-#[derive(Debug)]
 pub struct Pin {
-    name: String,
-    number: String,
-    kind: PinKind,
-    shape: PinShape,
+    pub name: String,
+    pub number: String,
+    pub kind: PinKind,
+    pub shape: PinShape,
 }
 
 impl Pin {
@@ -58,18 +50,9 @@ impl Pin {
             shape: PinShape::LINE,
         }
     }
-
-    #[inline]
-    pub fn name(&self) -> &String {
-        &self.name
-    }
-
-    #[inline]
-    pub fn number(&self) -> &String {
-        &self.number
-    }
 }
 
+#[derive(Debug)]
 struct Pinout {
     pins: Vec<Pin>,
     groups: LinkedHashMap<String, Vec<usize>>,
@@ -99,14 +82,17 @@ impl Pinout {
         }
     }
 
-    pub fn add_pin(&mut self, pin: Pin) {
+    pub fn add_pin(&mut self, pin: Pin) -> Vec<usize> {
+        let mut result = Vec::new();
         let index = self.pins.len();
-        if !self.groups.contains_key(pin.name()) {
-            self.groups.insert(pin.name().clone(), Vec::new());
+        if !self.groups.contains_key(&pin.name) {
+            self.groups.insert(pin.name.clone(), Vec::new());
         }
-        let group = self.groups.get_mut(pin.name()).unwrap();
+        let group = self.groups.get_mut(&pin.name).unwrap();
         group.push(index);
+        result.push(index);
         self.pins.push(pin);
+        result
     }
 
     pub fn from_config(config: &Config) -> Result<Self> {
@@ -126,14 +112,22 @@ impl Pinout {
 }
 
 impl Pinout {
-    fn add_pins(&mut self, name: &Yaml, value: &Yaml) -> Result<()> {
+    fn add_pins(&mut self, name: &Yaml, value: &Yaml) -> Result<Vec<usize>> {
+        let mut result = Vec::new();
         match value {
             Yaml::Hash(h) => {
-                for (name, value) in h {
-                    self.add_pins(name, value)?;
+                for (key, value) in h {
+                    result.append(&mut self.add_pins(key, value)?);
+                }
+                if let Yaml::String(ref s) = name {
+                    if !self.groups.contains_key(s) {
+                        self.groups.insert(s.clone(), Vec::new());
+                    }
+                    let group = self.groups.get_mut(s).unwrap();
+                    group.append(&mut result); // TODO: Consider `result.clone()` if the result will be used somewhere
                 }
             }
-            Yaml::String(_) | Yaml::Array(_) => {
+            Yaml::Integer(_) | Yaml::String(_) | Yaml::Array(_) => {
                 let names = self.parse_name(name)?;
                 let numbers = self.parse_number(value)?;
                 if names.len() > 1 {
@@ -144,19 +138,19 @@ impl Pinout {
                     );
                     for i in 0..names.len() {
                         let pin = Pin::new(&names[i], &numbers[i]);
-                        self.add_pin(pin);
+                        result.append(&mut self.add_pin(pin));
                     }
                 } else if names.len() == 1 {
                     // Single name to multiple numbers
                     for i in 0..numbers.len() {
                         let pin = Pin::new(&names[0], &numbers[i]);
-                        self.add_pin(pin);
+                        result.append(&mut self.add_pin(pin));
                     }
                 }
             }
             _ => (), // TODO: Return the error about unexpected type
         };
-        Ok(())
+        Ok(result)
     }
 
     fn parse_name(&self, name: &Yaml) -> Result<Vec<String>> {
@@ -193,7 +187,7 @@ impl Pinout {
                     result.append(&mut sub_names);
                 }
             }
-            _ => (),
+            _ => (), // TODO: Return the error about unexpected type
         }
         Ok(result)
     }
@@ -245,7 +239,7 @@ impl Pinout {
                     result.append(&mut sub_numbers);
                 }
             }
-            _ => (),
+            _ => (), // TODO: Return the error about unexpected type
         }
         Ok(result)
     }
@@ -256,7 +250,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_config() -> Result<()> {
+    fn test_pinout() -> Result<()> {
         let pinout_yaml = r"
         pinout:
           A: 1
@@ -266,6 +260,48 @@ mod tests {
           [E, F, G0..G2]: [9, 10, 20..22]
         ";
         let pinout = Pinout::from_config(&Config::from_str(pinout_yaml)?)?;
+        assert!(pinout.groups.contains_key("A"));
+        assert!(pinout.groups.contains_key("B"));
+        assert!(pinout.groups.contains_key("C"));
+        assert!(pinout.groups.contains_key("D0"));
+        assert!(pinout.groups.contains_key("D1"));
+        assert!(pinout.groups.contains_key("E"));
+        assert!(pinout.groups.contains_key("F"));
+        assert!(pinout.groups.contains_key("G0"));
+        assert!(pinout.groups.contains_key("G1"));
+        assert!(pinout.groups.contains_key("G2"));
+
+        assert_eq!(*pinout.groups.get("A").unwrap(), vec!(0));
+        assert_eq!(*pinout.groups.get("B").unwrap(), vec!(1, 2));
+        assert_eq!(*pinout.groups.get("C").unwrap(), vec!(3, 4, 5, 6, 7, 8));
+        assert_eq!(*pinout.groups.get("D0").unwrap(), vec!(9));
+        assert_eq!(*pinout.groups.get("D1").unwrap(), vec!(10));
+        assert_eq!(*pinout.groups.get("E").unwrap(), vec!(11));
+        assert_eq!(*pinout.groups.get("F").unwrap(), vec!(12));
+        assert_eq!(*pinout.groups.get("G0").unwrap(), vec!(13));
+        assert_eq!(*pinout.groups.get("G1").unwrap(), vec!(14));
+        assert_eq!(*pinout.groups.get("G2").unwrap(), vec!(15));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_pinout_group() -> Result<()> {
+        let pinout_yaml = r"
+        pinout:
+          GROUP:
+            A: 1
+            B: 2..3
+        ";
+        let pinout = Pinout::from_config(&Config::from_str(pinout_yaml)?)?;
+        assert!(pinout.groups.contains_key("GROUP"));
+        assert!(pinout.groups.contains_key("A"));
+        assert!(pinout.groups.contains_key("B"));
+
+        assert_eq!(*pinout.groups.get("GROUP").unwrap(), vec!(0, 1, 2));
+        assert_eq!(*pinout.groups.get("A").unwrap(), vec!(0));
+        assert_eq!(*pinout.groups.get("B").unwrap(), vec!(1, 2));
+
         Ok(())
     }
 }

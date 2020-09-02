@@ -1,17 +1,24 @@
+pub mod prelude;
+mod symbol_pin;
+mod text_box;
+
 use regex::Regex;
 use std::collections::HashMap;
 
 use crate::error::*;
 use crate::geometry::*;
-use crate::pin::*;
+use crate::pinout::Pin;
 use crate::svg::{self, *};
-use crate::text::*;
+
+pub use prelude::*;
+pub use symbol_pin::SymbolPin;
+pub use text_box::TextBox;
 
 #[derive(Debug)]
 pub enum Element {
     Line(Line),
     TextBox(TextBox),
-    Pin(Pin),
+    SymbolPin(SymbolPin),
 }
 
 #[derive(Debug)]
@@ -22,6 +29,7 @@ pub struct Drawing {
 }
 
 impl Drawing {
+    /// Creates a new drawing.
     pub fn new() -> Drawing {
         Drawing {
             canvas_transform: Transformation::new(),
@@ -30,20 +38,24 @@ impl Drawing {
         }
     }
 
+    /// Returns all drawing elements.
     pub fn elements(&self) -> &Vec<Element> {
         &self.elements
     }
 
+    /// Returns all drawing elements as a mutable vector.
     pub fn mut_elements(&mut self) -> &mut Vec<Element> {
         &mut self.elements
     }
 
+    /// Creates a drawing from the SVG string.
     pub fn from_svg(svg: &str) -> Result<Drawing> {
         let mut drawing = Drawing::new();
         drawing.add_svg(svg)?;
         Ok(drawing)
     }
 
+    /// Adds drawing elements from the SVG string.
     pub fn add_svg(&mut self, svg: &str) -> Result<()> {
         let mut elements = svg::to_elements(svg)?;
         let mut sx = 1.0;
@@ -67,7 +79,7 @@ impl Drawing {
             match element {
                 SvgElement::HLine(line) => {
                     if key.starts_with("pin") {
-                        self.add_pin(&key, line.x0, line.y, line.x1, line.y);
+                        self.add_symbol_pin(&key, line.x0, line.y, line.x1, line.y);
                     } else {
                         self.add_line(
                             Line::new(line.x0, line.y, line.x1, line.y).width(line.width),
@@ -76,7 +88,7 @@ impl Drawing {
                 }
                 SvgElement::VLine(line) => {
                     if key.starts_with("pin") {
-                        self.add_pin(&key, line.x, line.y0, line.x, line.y1);
+                        self.add_symbol_pin(&key, line.x, line.y0, line.x, line.y1);
                     } else {
                         self.add_line(
                             Line::new(line.x, line.y0, line.x, line.y1).width(line.width),
@@ -91,15 +103,18 @@ impl Drawing {
         Ok(())
     }
 
+    /// Adds a line object to the drawing.
     pub fn add_line(&mut self, mut line: Line) {
         line.transform(&self.canvas_transform);
         self.elements.push(Element::Line(line));
     }
 
+    /// Adds an attribute object to the drawing.
     pub fn add_attr(&mut self, key: &str, value: &str) {
         self.attrs.insert(key.to_string(), value.to_string());
     }
 
+    /// Returns the attribute value.
     pub fn attr(&self, key: &str, def: &str) -> String {
         self.attrs.get(key).unwrap_or(&def.to_string()).clone()
     }
@@ -128,7 +143,7 @@ impl Drawing {
             y: p.y,
             // TODO: Extract info from attributes/id
             orientation: Orientation::Horizontal,
-            visibility: Visibility::Visible,
+            visibility: Visibility(true),
             halign: halign,
             valign: valign,
             id: id,
@@ -136,30 +151,26 @@ impl Drawing {
         self.elements.push(Element::TextBox(textbox));
     }
 
-    fn add_pin(&mut self, key: &String, x0: f64, y0: f64, x1: f64, y1: f64) {
+    fn add_symbol_pin(&mut self, key: &str, x0: f64, y0: f64, x1: f64, y1: f64) {
         let id_attrs: Vec<&str> = key.split(':').collect();
 
         let id = *id_attrs.get(SvgPinIdAttrs::Id as usize).unwrap_or(&"");
-        let net_regex = Regex::new(r"^(pin)?\-?(?P<net>.*)$").unwrap();
-        let net = net_regex
+        let name_regex = Regex::new(r"^(pin)?\-?(?P<name>.*)$").unwrap();
+        let name = name_regex
             .captures(id)
             .unwrap()
-            .name("net")
+            .name("name")
             .unwrap()
             .as_str();
 
         let halign = HAlign::from_attr(id_attrs.get(SvgPinIdAttrs::HAlign as usize));
         let valign = VAlign::from_attr(id_attrs.get(SvgPinIdAttrs::VAlign as usize));
 
-        let p0 = Point { x: x0, y: y0 };
-        let p1 = Point { x: x1, y: y1 };
-        let mut line = Line {
-            p: (p0, p1),
-            width: 0.,
-        };
+        let mut line = Line::new(x0, y0, x1, y1);
         line.transform(&self.canvas_transform);
 
-        let pin = Pin::new(&net, halign, valign, &line);
-        self.elements.push(Element::Pin(pin));
+        let pin = Pin::new(name, ""); // TODO: Number?
+        let sym_pin = SymbolPin::new(pin, halign, valign, &line);
+        self.elements.push(Element::SymbolPin(sym_pin));
     }
 }

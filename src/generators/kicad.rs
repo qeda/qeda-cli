@@ -4,13 +4,12 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use crate::config::Config;
-use crate::drawing::{Drawing, Element};
+use crate::drawing::*;
 use crate::error::*;
 use crate::generators::GeneratorHandler;
 use crate::geometry::Transform;
 use crate::library::Library;
-use crate::pin::*;
-use crate::text::*;
+use crate::pinout::*;
 
 const KICADLIB_DIR: &str = "kicadlib";
 
@@ -114,8 +113,8 @@ impl fmt::Display for VAlign {
 impl fmt::Display for Visibility {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Visibility::Visible => write!(f, "V"),
-            Visibility::Hidden => write!(f, "H"),
+            Visibility(true) => write!(f, "V"),
+            Visibility(false) => write!(f, "H"),
         }
     }
 }
@@ -217,33 +216,33 @@ impl KicadGenerator {
 
     fn write_element(mut f: &File, params: &GeneratorParameters, element: &Element) -> Result<()> {
         match element {
-            Element::Pin(pin) => {
-                let mut p = pin.pos.clone();
+            Element::SymbolPin(sym_pin) => {
+                let mut p = sym_pin.origin.clone();
                 p.scale(params.grid, params.grid);
                 write!(
                     f,
                     "X {name} {number} {posx} {posy} {length} {orientation} {snum} {snom} \
                     {unit} {convert} {etype} {visibility}{shape}\n",
-                    name = pin.net,
-                    number = pin.number,
+                    name = sym_pin.pin.name,
+                    number = sym_pin.pin.number,
                     posx = p.x.round(),
                     posy = p.y.round(),
-                    length = (pin.length * params.grid).round(),
-                    orientation = pin.direction,
+                    length = (sym_pin.len * params.grid).round(),
+                    orientation = sym_pin.direction,
                     snum = params.font_size.pin,  // pin number text size
                     snom = params.font_size.name, // pin name text size
                     unit = 0, // 0 if common to all parts. If not, number of the part (1. .n)
                     convert = 0, // 0 if common to the representations, if not 1 or 2
-                    etype = pin.kind,
-                    visibility = match pin.visibility {
-                        Visibility::Visible => "",
-                        Visibility::Hidden => "N",
+                    etype = sym_pin.pin.kind,
+                    visibility = match sym_pin.visibility {
+                        Visibility(true) => "",
+                        Visibility(false) => "N",
                     },
-                    shape = pin.shape,
+                    shape = sym_pin.pin.shape,
                 )?;
                 debug!(
-                    "Pin: {}, {}, ({}, {})",
-                    pin.net, pin.number, pin.pos.x, pin.pos.y
+                    "SymbolPin: {}, {}, ({}, {})",
+                    sym_pin.pin.name, sym_pin.pin.number, sym_pin.origin.x, sym_pin.origin.y
                 );
             }
             Element::Line(l) => {
