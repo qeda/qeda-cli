@@ -15,6 +15,9 @@ pub struct Point {
 }
 
 impl Point {
+    pub fn new(x: f64, y: f64) -> Self {
+        Point { x: x, y: y }
+    }
     pub fn distance(begin: &Point, end: &Point) -> f64 {
         ((end.x - begin.x).powi(2) + (end.y - begin.y).powi(2)).sqrt()
     }
@@ -79,7 +82,7 @@ impl Line {
 
 impl Transform for Line {
     fn transform(&mut self, t: &Transformation) {
-        self.width *= t.calc_scale();
+        self.width *= t.scale;
         self.p.0.transform(t);
         self.p.1.transform(t);
     }
@@ -87,6 +90,10 @@ impl Transform for Line {
 
 #[derive(Debug)]
 pub struct Transformation {
+    pub scale: f64,
+    pub scale_x: f64,
+    pub scale_y: f64,
+
     m: [f64; 9],
 }
 
@@ -94,25 +101,10 @@ impl Transformation {
     pub fn new() -> Transformation {
         Transformation {
             m: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+            scale: 1.0,
+            scale_x: 1.0,
+            scale_y: 1.0,
         }
-    }
-
-    pub fn calc_scale(&self) -> f64 {
-        let sx = self.calc_scale_x();
-        let sy = self.calc_scale_y();
-        if sx == sy {
-            sx
-        } else {
-            ((sx * sx + sy * sy) / 2.0).sqrt()
-        }
-    }
-
-    pub fn calc_scale_x(&self) -> f64 {
-        (self.m[0] * self.m[0] + self.m[3] * self.m[3]).sqrt()
-    }
-
-    pub fn calc_scale_y(&self) -> f64 {
-        (self.m[1] * self.m[1] + self.m[4] * self.m[4]).sqrt()
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) {
@@ -143,5 +135,12 @@ impl Transformation {
         let m21 = n[6] * self.m[1] + n[7] * self.m[4] + n[8] * self.m[7];
         let m22 = n[6] * self.m[2] + n[7] * self.m[5] + n[8] * self.m[8];
         self.m = [m00, m01, m02, m10, m11, m12, m20, m21, m22];
+        self.scale_x = (self.m[0] * self.m[0] + self.m[3] * self.m[3]).sqrt();
+        self.scale_y = (self.m[1] * self.m[1] + self.m[4] * self.m[4]).sqrt();
+        self.scale = if self.scale_x == self.scale_y {
+            self.scale_x
+        } else {
+            ((self.scale_x * self.scale_x + self.scale_y * self.scale_y) / 2.0).sqrt()
+        }
     }
 }

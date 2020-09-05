@@ -1,45 +1,9 @@
 use linked_hash_map::LinkedHashMap;
 use svgdom::*;
 
+use super::prelude::*;
+
 use crate::error::*;
-
-pub enum SvgRectIdAttrs {
-    Id = 0,
-    HAlign = 1,
-    VAlign = 2,
-}
-
-pub enum SvgPinIdAttrs {
-    Id = 0,
-    HAlign = 1,
-    VAlign = 2,
-}
-
-#[derive(Debug)]
-pub enum SvgHAlign {
-    Left,
-    Center,
-    Right,
-}
-
-impl Default for SvgHAlign {
-    fn default() -> Self {
-        SvgHAlign::Left
-    }
-}
-
-#[derive(Debug)]
-pub enum SvgVAlign {
-    Top,
-    Middle,
-    Bottom,
-}
-
-impl Default for SvgVAlign {
-    fn default() -> Self {
-        SvgVAlign::Bottom
-    }
-}
 
 #[derive(Clone, Default, Debug)]
 pub struct SvgPoint {
@@ -123,8 +87,8 @@ pub struct SvgText {
     pub y: f64,
     pub height: f64,
     pub text: String,
-    pub halign: SvgHAlign,
-    pub valign: SvgVAlign,
+    pub halign: HAlign,
+    pub valign: VAlign,
 }
 
 #[derive(Debug)]
@@ -411,18 +375,18 @@ impl Svg {
                 AttributeId::TextAnchor => {
                     if let AttributeValue::String(ref string) = attr.value {
                         text.halign = match string.as_ref() {
-                            "middle" => SvgHAlign::Center,
-                            "end" => SvgHAlign::Right,
-                            _ => SvgHAlign::default(),
+                            "middle" => HAlign::Center,
+                            "end" => HAlign::Right,
+                            _ => HAlign::default(),
                         }
                     }
                 }
                 AttributeId::DominantBaseline => {
                     if let AttributeValue::String(ref string) = attr.value {
                         text.valign = match string.as_ref() {
-                            "middle" => SvgVAlign::Middle,
-                            "text-before-edge" => SvgVAlign::Top,
-                            _ => SvgVAlign::default(),
+                            "middle" => VAlign::Middle,
+                            "text-before-edge" => VAlign::Top,
+                            _ => VAlign::default(),
                         }
                     }
                 }

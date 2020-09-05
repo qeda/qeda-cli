@@ -16,10 +16,11 @@ const YAML_SUFFIX: &str = ".yml";
 
 #[derive(Debug)]
 pub struct Library<'a> {
-    config: Config,
+    pub components: Vec<Component>,
+    pub config: Config,
+
     symbols: Symbols<'a>,
     patterns: Patterns<'a>,
-    components: Vec<Component>,
 }
 
 impl<'a> Library<'a> {
@@ -32,7 +33,7 @@ impl<'a> Library<'a> {
     ///
     /// let lib = Library::new();
     /// ```
-    pub fn new() -> Library<'a> {
+    pub fn new() -> Self {
         Library {
             config: load_config!("qeda.yml"),
             symbols: Symbols::new(),
@@ -58,7 +59,7 @@ impl<'a> Library<'a> {
     ///
     /// assert_eq!(lib.components().len(), 1);
     /// ```
-    pub fn from_config(config: &Config) -> Result<Library> {
+    pub fn from_config(config: &Config) -> Result<Self> {
         let mut lib = Library::new();
         lib.merge_config(config);
         let components_hash = config.get_hash("components")?;
@@ -132,16 +133,6 @@ impl<'a> Library<'a> {
         fs::write(component_path, component_yaml)?;
 
         Ok(component)
-    }
-
-    /// Returns components array.
-    pub fn components(&self) -> &Vec<Component> {
-        &self.components
-    }
-
-    /// Returns library config.
-    pub fn config(&self) -> &Config {
-        &self.config
     }
 
     /// Generates library for using in EDA.

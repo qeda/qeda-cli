@@ -23,9 +23,6 @@ pub enum QedaError {
     #[error("invalid pin name: '{0}'")]
     InvalidPinName(String),
 
-    #[error("invalid pin name in SVG: '{0}'")]
-    InvalidPinNameInSvg(String),
-
     #[error("invalid pin range '{0}', name base should be the same: '{1}' != '{2}'")]
     InvalidPinRangeNameBase(String, String, String),
 
@@ -34,6 +31,12 @@ pub enum QedaError {
 
     #[error("invalid SVG path")]
     InvalidSvgPath,
+
+    #[error("invalid SVG pin ID: '{0}'")]
+    InvalidSvgPinId(String),
+
+    #[error("invalid SVG pin name: '{0}'")]
+    InvalidSvgPinName(String),
 
     #[error("invalid symbol type: '{0}'")]
     InvalidSymbolType(String),

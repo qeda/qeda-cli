@@ -13,11 +13,8 @@ pub struct Component {
 }
 
 impl Component {
-    pub fn from_config(
-        config: &Config,
-        symbols: &Symbols,
-        patterns: &Patterns,
-    ) -> Result<Component> {
+    /// Creates a new `Component` from `Config`.
+    pub fn from_config(config: &Config, symbols: &Symbols, patterns: &Patterns) -> Result<Self> {
         let name = config.get_string("name")?;
         let symbol_handler = symbols.get_handler(&config.get_string("symbol.type")?)?;
         let symbol = symbol_handler.draw(&config)?;
@@ -32,6 +29,7 @@ impl Component {
         })
     }
 
+    /// Returns the subset of the conponent's digest (fingerprint).
     pub fn digest_short(&self) -> &str {
         &self.digest[0..12]
     }

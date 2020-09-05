@@ -58,13 +58,6 @@ impl FontSize {
             pin: config.get_f64("generator.font-size.pin")?,
         })
     }
-
-    pub fn size(&self, kind: FieldKind) -> f64 {
-        match kind {
-            FieldKind::Reference => self.ref_des,
-            FieldKind::Value => self.name,
-        }
-    }
 }
 
 struct GeneratorParameters {
@@ -104,7 +97,7 @@ impl fmt::Display for VAlign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             VAlign::Top => write!(f, "T"),
-            VAlign::Center => write!(f, "C"),
+            VAlign::Middle => write!(f, "C"),
             VAlign::Bottom => write!(f, "B"),
         }
     }
@@ -168,13 +161,13 @@ impl fmt::Display for PinDirection {
 
 impl KicadGenerator {
     fn render_symbols(&self, name: &str, library: &Library) -> Result<()> {
-        let params = GeneratorParameters::new(&library.config())?;
+        let params = GeneratorParameters::new(&library.config)?;
         let mut f = File::create(format!("{}/{}.lib", KICADLIB_DIR, name))?;
 
         f.write(b"EESchema-LIBRARY Version 2.4\n")?;
         f.write(b"#encoding utf-8\n")?;
 
-        let components = library.components();
+        let components = &library.components;
         for component in components {
             let symbol = &component.symbol;
             let ref_des = symbol.attr("ref-des", "U");
@@ -185,18 +178,18 @@ impl KicadGenerator {
                 &symbol,
             )?;
 
-            let elements = symbol.elements();
-            let text_boxes = elements.iter().filter_map(|element| match element {
-                Element::TextBox(text_box) => Some(text_box),
+            let elements = &symbol.elements;
+            let attrs = elements.iter().filter_map(|element| match element {
+                Element::Attribute(attr) => Some(attr),
                 _ => None,
             });
-            for text_box in text_boxes {
+            for attr in attrs {
                 KicadGenerator::write_field(
                     &mut f,
                     &ref_des.as_str(),
                     &component.name.as_str(),
                     &params,
-                    &text_box,
+                    &attr,
                 )?;
             }
 
@@ -296,9 +289,9 @@ impl KicadGenerator {
         ref_des: &str,
         component_name: &str,
         params: &GeneratorParameters,
-        text_box: &TextBox,
+        attr: &Attribute,
     ) -> Result<()> {
-        let field_kind = match text_box.id.as_str() {
+        let field_kind = match attr.id.as_str() {
             "ref-des" => Some(FieldKind::Reference),
             "value" => Some(FieldKind::Value),
             _ => None,
@@ -314,13 +307,13 @@ impl KicadGenerator {
                 {hjustify} {vjustify}NN\n",
                 field_number = field_kind as u8,
                 text = text,
-                x = (text_box.x * params.grid).round(),
-                y = (text_box.y * params.grid).round(),
-                dimension = params.font_size.size(field_kind).round(),
-                orientation = text_box.orientation,
-                visibility = text_box.visibility,
-                hjustify = text_box.halign,
-                vjustify = text_box.valign,
+                x = (attr.origin.x * params.grid).round(),
+                y = (attr.origin.y * params.grid).round(),
+                dimension = (attr.font_size * params.grid).round(),
+                orientation = attr.orientation,
+                visibility = attr.visibility,
+                hjustify = attr.halign,
+                vjustify = attr.valign,
             )?;
         }
 
