@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum HAlign {
     Left,
     Center,
@@ -22,7 +22,7 @@ impl Default for HAlign {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum VAlign {
     Top,
     Middle,
@@ -46,7 +46,7 @@ impl Default for VAlign {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Orientation {
     Horizontal,
     Vertical,
@@ -58,7 +58,7 @@ impl Default for Orientation {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Visibility(pub bool);
 
 #[derive(Debug)]

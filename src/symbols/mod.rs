@@ -4,13 +4,13 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug};
 
 use crate::config::Config;
-use crate::drawing::Drawing;
 use crate::error::*;
+use crate::symbol::Symbol;
 
 use capacitor::CapacitorSymbol;
 
 pub trait SymbolHandler {
-    fn draw(&self, config: &Config) -> Result<Drawing>;
+    fn draw(&self, config: &Config) -> Result<Symbol>;
 }
 
 impl Debug for dyn SymbolHandler {

@@ -136,7 +136,9 @@ impl<'a> Library<'a> {
     }
 
     /// Generates library for using in EDA.
-    pub fn generate(&self, name: &str) -> Result<()> {
+    ///
+    /// Consumes the `Library` by moving to renderer.
+    pub fn generate(self, name: &str) -> Result<()> {
         let generator_type = self.config.get_string("generator.type")?;
         let generators = Generators::new();
         generators.get(&generator_type)?.render(name, self)?;

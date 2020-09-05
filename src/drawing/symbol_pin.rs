@@ -1,6 +1,6 @@
+use super::geometry::*;
 use super::prelude::*;
 
-use crate::geometry::*;
 use crate::pinout::Pin;
 
 #[derive(Debug)]
@@ -42,5 +42,14 @@ impl SymbolPin {
             direction: direction,
             visibility: Visibility(true),
         }
+    }
+}
+
+impl Transform for SymbolPin {
+    fn transform(mut self, t: &Transformation) -> Self {
+        self.origin = self.origin.transform(t);
+        self.len *= t.scale;
+        // TODO: Change `direction` according to rotation
+        self
     }
 }

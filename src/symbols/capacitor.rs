@@ -2,7 +2,9 @@ use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
 use crate::pinout::*;
-use crate::symbols::SymbolHandler;
+use crate::symbol::Symbol;
+
+use super::SymbolHandler;
 
 pub struct CapacitorSymbol {}
 
@@ -13,7 +15,7 @@ impl CapacitorSymbol {
 }
 
 impl SymbolHandler for CapacitorSymbol {
-    fn draw(&self, config: &Config) -> Result<Drawing> {
+    fn draw(&self, config: &Config) -> Result<Symbol> {
         debug!("draw capacitor symbol");
 
         let mut pinout = Pinout::from_config(config)?;
@@ -24,9 +26,8 @@ impl SymbolHandler for CapacitorSymbol {
             pinout.add_pin(Pin::new("R", "2").kind(PinKind::PASSIVE));
         }
 
-        let mut drawing = Drawing::from_svg(include_str!("capacitor.svg"), pinout)?;
-        drawing.add_attr("ref-des", "C");
-
-        Ok(drawing)
+        let mut result = Symbol::new();
+        result.add_part(Drawing::from_svg(include_str!("capacitor.svg"), pinout)?);
+        Ok(result)
     }
 }

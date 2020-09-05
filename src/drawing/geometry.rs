@@ -1,10 +1,15 @@
-pub trait Transform {
-    fn transform(&mut self, t: &Transformation);
+use std::marker::Sized;
 
-    fn scale(&mut self, sx: f64, sy: f64) {
+pub trait Transform {
+    fn transform(self, t: &Transformation) -> Self;
+
+    fn scale(self, sx: f64, sy: f64) -> Self
+    where
+        Self: Sized,
+    {
         let mut t = Transformation::new();
         t.scale(sx, sy);
-        self.transform(&t);
+        self.transform(&t)
     }
 }
 
@@ -24,8 +29,9 @@ impl Point {
 }
 
 impl Transform for Point {
-    fn transform(&mut self, t: &Transformation) {
-        t.transform(self);
+    fn transform(mut self, t: &Transformation) -> Self {
+        t.transform_point(&mut self);
+        self
     }
 }
 
@@ -81,10 +87,10 @@ impl Line {
 }
 
 impl Transform for Line {
-    fn transform(&mut self, t: &Transformation) {
+    fn transform(mut self, t: &Transformation) -> Self {
         self.width *= t.scale;
-        self.p.0.transform(t);
-        self.p.1.transform(t);
+        self.p = (self.p.0.transform(t), self.p.1.transform(t));
+        self
     }
 }
 
@@ -117,7 +123,7 @@ impl Transformation {
         self.multiply(&t);
     }
 
-    pub fn transform(&self, p: &mut Point) {
+    pub fn transform_point(&self, p: &mut Point) {
         let x = self.m[0] * p.x + self.m[1] * p.y + self.m[2];
         let y = self.m[3] * p.x + self.m[4] * p.y + self.m[5];
         p.x = x;

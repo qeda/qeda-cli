@@ -15,9 +15,9 @@ pub mod library;
 mod component;
 mod error;
 mod generators;
-mod geometry;
 mod patterns;
 mod pinout;
+mod symbol;
 mod symbols;
 
 pub use error::Result;

@@ -38,6 +38,9 @@ pub enum QedaError {
     #[error("invalid SVG pin name: '{0}'")]
     InvalidSvgPinName(String),
 
+    #[error("invalid symbol, no parts: '{0}'")]
+    InvalidSymbolNoParts(String),
+
     #[error("invalid symbol type: '{0}'")]
     InvalidSymbolType(String),
 

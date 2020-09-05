@@ -1,4 +1,5 @@
 mod kicad;
+mod kicad_symbols;
 
 use std::collections::HashMap;
 
@@ -7,7 +8,7 @@ use crate::library::Library;
 use kicad::KicadGenerator;
 
 pub trait GeneratorHandler {
-    fn render(&self, name: &str, library: &Library) -> Result<()>;
+    fn render(&self, name: &str, library: Library) -> Result<()>;
 }
 
 pub struct Generators<'a> {

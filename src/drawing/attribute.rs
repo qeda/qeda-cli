@@ -1,10 +1,10 @@
+use super::geometry::{Point, Transform, Transformation};
 use super::prelude::*;
 
-use crate::geometry::{Point, Transform, Transformation};
-
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Attribute {
     pub id: String,
+    pub value: String,
     pub origin: Point,
     pub font_size: f64,
     pub halign: HAlign,
@@ -14,9 +14,10 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: &str, value: &str) -> Self {
         Attribute {
             id: id.to_string(),
+            value: value.to_string(),
             origin: Point::default(),
             font_size: 0.0,
             halign: HAlign::default(),
@@ -44,9 +45,10 @@ impl Attribute {
 }
 
 impl Transform for Attribute {
-    fn transform(&mut self, t: &Transformation) {
-        self.origin.transform(t);
+    fn transform(mut self, t: &Transformation) -> Self {
+        self.origin = self.origin.transform(t);
         self.font_size *= t.scale;
         // TODO: Change `orientation` depending on rotation
+        self
     }
 }

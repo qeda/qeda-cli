@@ -3,9 +3,12 @@ timeout: 5 # seconds
 
 generator:
   type: kicad
-  symbol-grid: 100 # mils
-  font-size: # mils
-    default: 50
-    ref-des: 50
-    name: 50
-    pin: 50
+  symbol:
+    grid: 100 # mils
+    font-size: # mils
+      default: 50
+      ref-des: 50
+      name: 50
+      pin: 50
+    space:
+      pin: 40

@@ -2,12 +2,13 @@ use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
 use crate::patterns::Patterns;
+use crate::symbol::Symbol;
 use crate::symbols::Symbols;
 
 #[derive(Debug)]
 pub struct Component {
     pub name: String,
-    pub symbol: Drawing,
+    pub symbol: Symbol,
     pub pattern: Drawing,
     pub digest: String,
 }
