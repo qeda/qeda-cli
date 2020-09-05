@@ -6,10 +6,10 @@ use crate::symbols::Symbols;
 
 #[derive(Debug)]
 pub struct Component {
-    name: String,
-    symbol: Drawing,
-    pattern: Drawing,
-    digest: String,
+    pub name: String,
+    pub symbol: Drawing,
+    pub pattern: Drawing,
+    pub digest: String,
 }
 
 impl Component {
@@ -30,14 +30,6 @@ impl Component {
             pattern,
             digest,
         })
-    }
-
-    pub fn name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn symbol(&self) -> &Drawing {
-        &self.symbol
     }
 
     pub fn digest_short(&self) -> &str {

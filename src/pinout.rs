@@ -7,19 +7,24 @@ use yaml_rust::Yaml;
 use crate::config::Config;
 use crate::error::*;
 
+// Pin properties: electrical type
 bitflags! {
     pub struct PinKind: u16 {
         const UNSPECIFIED    = 0x0000;
         const IN             = 0x0001;
         const OUT            = 0x0002;
-        const TRISTATE       = 0x0004;
+        const HI_Z           = 0x0004; // Also called `tristate`
         const PASSIVE        = 0x0008;
         const POWER          = 0x0010;
         const OPEN_COLLECTOR = 0x0020;
+        const OPEN_DRAIN     = 0x0020;
         const OPEN_EMITTER   = 0x0040;
+        const OPEN_SOURCE    = 0x0040;
         const NOT_CONNECTED  = 0x0080;
     }
 }
+
+// Pin properties: decoration
 bitflags! {
     pub struct PinShape: u16 {
         const LINE           = 0x0000;
@@ -27,13 +32,18 @@ bitflags! {
         const OUT            = 0x0002;
         const INVERTED       = 0x0004;
         const CLOCK          = 0x0008;
-        const LOW            = 0x0010;
-        const FALLING_EDGE   = 0x0020;
-        const NON_LOGIC      = 0x0040;
+        const ACTIVE_LOW     = 0x0010;
+        const NON_LOGIC      = 0x0020;
+        const ANALOG         = 0x0040;
+        const PULL_UP        = 0x0080;
+        const PULL_DOWN      = 0x0100;
+        const POSTPONED      = 0x0200;
+        const SHIFT          = 0x0400;
+
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pin {
     pub name: String,
     pub number: String,
@@ -42,6 +52,7 @@ pub struct Pin {
 }
 
 impl Pin {
+    /// Creates a new empty `Pin`.
     pub fn new(name: &str, number: &str) -> Self {
         Pin {
             name: name.to_string(),
@@ -50,16 +61,29 @@ impl Pin {
             shape: PinShape::LINE,
         }
     }
+
+    /// Sets `Pin`'s electrical type (`kind`).
+    pub fn kind(mut self, kind: PinKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    /// Sets `Pin`'s decoration style (`shape`).
+    pub fn shape(mut self, shape: PinShape) -> Self {
+        self.shape = shape;
+        self
+    }
 }
 
 #[derive(Debug)]
-struct Pinout {
-    pins: Vec<Pin>,
-    groups: LinkedHashMap<String, Vec<usize>>,
+pub struct Pinout {
+    pub pins: Vec<Pin>,
+    pub groups: LinkedHashMap<String, Vec<usize>>,
     letters: Vec<String>,
 }
 
 impl Pinout {
+    /// Creates a new empty `Pinout`.
     pub fn new() -> Self {
         let mut letters: Vec<String> = vec![
             "", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "T",
@@ -82,6 +106,7 @@ impl Pinout {
         }
     }
 
+    /// Adds `Pin` to the current `Pinout`.
     pub fn add_pin(&mut self, pin: Pin) -> Vec<usize> {
         let mut result = Vec::new();
         let index = self.pins.len();
@@ -95,19 +120,42 @@ impl Pinout {
         result
     }
 
+    /// Creates a new `Pinout` from the `Config`.
     pub fn from_config(config: &Config) -> Result<Self> {
         let mut result = Self::new();
         if let Ok(pinout_yaml) = config.get_element("pinout") {
             match pinout_yaml {
                 Yaml::Hash(h) => {
-                    for (name, value) in h {
-                        result.add_pins(name, value)?;
+                    for (key, value) in h {
+                        result.add_pins(key, value)?;
+                    }
+                }
+                _ => (), // TODO: Return the error about unexpected type
+            }
+        }
+        if let Ok(props_yaml) = config.get_element("pin-properties") {
+            match props_yaml {
+                Yaml::Hash(h) => {
+                    for (key, value) in h {
+                        dbg!(key);
+                        dbg!(value);
+                        // TODO: Process pin properties
                     }
                 }
                 _ => (), // TODO: Return the error about unexpected type
             }
         }
         Ok(result)
+    }
+
+    /// Returns the first `Pin` with the specified `name`.
+    pub fn get_first(&self, name: &str) -> Option<&Pin> {
+        if self.groups.contains_key(name) {
+            let index = *self.groups[name].first().unwrap();
+            Some(&self.pins[index])
+        } else {
+            None
+        }
     }
 }
 

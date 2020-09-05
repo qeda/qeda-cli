@@ -79,18 +79,7 @@ impl Line {
 
 impl Transform for Line {
     fn transform(&mut self, t: &Transformation) {
-        let len = self.len();
-        if len > 0. {
-            let mut zero_point = Point { x: 0., y: 0. };
-            let mut width_perpendicular = Point {
-                x: self.width * (self.p.1.y - self.p.0.y) / len,
-                y: self.width * (self.p.1.x - self.p.0.x) / len,
-            };
-            zero_point.transform(t);
-            width_perpendicular.transform(t);
-            self.width = Point::distance(&zero_point, &width_perpendicular);
-        }
-
+        self.width *= t.calc_scale();
         self.p.0.transform(t);
         self.p.1.transform(t);
     }
@@ -106,6 +95,24 @@ impl Transformation {
         Transformation {
             m: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
         }
+    }
+
+    pub fn calc_scale(&self) -> f64 {
+        let sx = self.calc_scale_x();
+        let sy = self.calc_scale_y();
+        if sx == sy {
+            sx
+        } else {
+            ((sx * sx + sy * sy) / 2.0).sqrt()
+        }
+    }
+
+    pub fn calc_scale_x(&self) -> f64 {
+        (self.m[0] * self.m[0] + self.m[3] * self.m[3]).sqrt()
+    }
+
+    pub fn calc_scale_y(&self) -> f64 {
+        (self.m[1] * self.m[1] + self.m[4] * self.m[4]).sqrt()
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) {

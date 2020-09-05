@@ -1,5 +1,4 @@
 mod capacitor;
-mod pinout;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug};

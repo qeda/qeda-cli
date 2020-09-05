@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::error::*;
 use crate::geometry::*;
-use crate::pinout::Pin;
+use crate::pinout::Pinout;
 use crate::svg::{self, *};
 
 pub use prelude::*;
@@ -49,14 +49,14 @@ impl Drawing {
     }
 
     /// Creates a drawing from the SVG string.
-    pub fn from_svg(svg: &str) -> Result<Drawing> {
+    pub fn from_svg(svg: &str, pinout: Pinout) -> Result<Drawing> {
         let mut drawing = Drawing::new();
-        drawing.add_svg(svg)?;
+        drawing.add_svg(svg, pinout)?;
         Ok(drawing)
     }
 
     /// Adds drawing elements from the SVG string.
-    pub fn add_svg(&mut self, svg: &str) -> Result<()> {
+    pub fn add_svg(&mut self, svg: &str, pinout: Pinout) -> Result<()> {
         let mut elements = svg::to_elements(svg)?;
         let mut sx = 1.0;
         let mut sy = 1.0;
@@ -77,22 +77,20 @@ impl Drawing {
         debug!("SVG elements: {:?}", &elements);
         for (key, element) in elements {
             match element {
-                SvgElement::HLine(line) => {
+                SvgElement::HLine(hline) => {
+                    let line = Line::new(hline.x0, hline.y, hline.x1, hline.y);
                     if key.starts_with("pin") {
-                        self.add_symbol_pin(&key, line.x0, line.y, line.x1, line.y);
+                        self.add_symbol_pin(&key, &pinout, line)?;
                     } else {
-                        self.add_line(
-                            Line::new(line.x0, line.y, line.x1, line.y).width(line.width),
-                        );
+                        self.add_line(line.width(hline.width));
                     }
                 }
-                SvgElement::VLine(line) => {
+                SvgElement::VLine(vline) => {
+                    let line = Line::new(vline.x, vline.y0, vline.x, vline.y1);
                     if key.starts_with("pin") {
-                        self.add_symbol_pin(&key, line.x, line.y0, line.x, line.y1);
+                        self.add_symbol_pin(&key, &pinout, line)?;
                     } else {
-                        self.add_line(
-                            Line::new(line.x, line.y0, line.x, line.y1).width(line.width),
-                        );
+                        self.add_line(line.width(vline.width));
                     }
                 }
                 SvgElement::Rect(rect) => self.add_textbox(&key, &rect),
@@ -151,7 +149,7 @@ impl Drawing {
         self.elements.push(Element::TextBox(textbox));
     }
 
-    fn add_symbol_pin(&mut self, key: &str, x0: f64, y0: f64, x1: f64, y1: f64) {
+    fn add_symbol_pin(&mut self, key: &str, pinout: &Pinout, mut line: Line) -> Result<()> {
         let id_attrs: Vec<&str> = key.split(':').collect();
 
         let id = *id_attrs.get(SvgPinIdAttrs::Id as usize).unwrap_or(&"");
@@ -166,11 +164,14 @@ impl Drawing {
         let halign = HAlign::from_attr(id_attrs.get(SvgPinIdAttrs::HAlign as usize));
         let valign = VAlign::from_attr(id_attrs.get(SvgPinIdAttrs::VAlign as usize));
 
-        let mut line = Line::new(x0, y0, x1, y1);
         line.transform(&self.canvas_transform);
 
-        let pin = Pin::new(name, ""); // TODO: Number?
-        let sym_pin = SymbolPin::new(pin, halign, valign, &line);
+        let pin = pinout
+            .get_first(name)
+            .ok_or(QedaError::InvalidPinNameInSvg(name.to_string()))?;
+        let sym_pin = SymbolPin::new(pin.clone(), halign, valign, &line);
         self.elements.push(Element::SymbolPin(sym_pin));
+
+        Ok(())
     }
 }

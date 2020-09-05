@@ -125,15 +125,15 @@ impl fmt::Display for PinKind {
             PinKind::UNSPECIFIED => write!(f, "U"),
             PinKind::IN => write!(f, "I"),
             PinKind::OUT => write!(f, "O"),
-            x if x == (PinKind::IN | PinKind::OUT) => write!(f, "B"),
-            PinKind::TRISTATE => write!(f, "T"),
             PinKind::PASSIVE => write!(f, "P"),
             PinKind::POWER => write!(f, "W"),
-            x if x == (PinKind::POWER | PinKind::IN) => write!(f, "W"),
-            x if x == (PinKind::POWER | PinKind::OUT) => write!(f, "w"),
             PinKind::OPEN_COLLECTOR => write!(f, "C"),
             PinKind::OPEN_EMITTER => write!(f, "E"),
             PinKind::NOT_CONNECTED => write!(f, "N"),
+            x if x == (PinKind::IN | PinKind::OUT) => write!(f, "B"),
+            x if x == (PinKind::POWER | PinKind::IN) => write!(f, "W"),
+            x if x == (PinKind::POWER | PinKind::OUT) => write!(f, "w"),
+            x if (x & PinKind::HI_Z) == PinKind::HI_Z => write!(f, "T"),
             _ => write!(f, "U"),
         }
     }
@@ -145,13 +145,11 @@ impl fmt::Display for PinShape {
             PinShape::LINE => write!(f, ""),
             PinShape::INVERTED => write!(f, "I"),
             PinShape::CLOCK => write!(f, "C"),
-            x if x == (PinShape::INVERTED | PinShape::CLOCK) => write!(f, "CI"),
-            PinShape::IN | PinShape::LOW => write!(f, "L"),
-            x if x == (PinShape::CLOCK | PinShape::LOW) => write!(f, "CL"),
-            x if x == (PinShape::OUT | PinShape::LOW) => write!(f, "V"),
-            PinShape::FALLING_EDGE => write!(f, "F"),
-            x if x == (PinShape::FALLING_EDGE | PinShape::CLOCK) => write!(f, "F"),
-            PinShape::NON_LOGIC => write!(f, "X"),
+            PinShape::NON_LOGIC | PinShape::ANALOG => write!(f, "X"),
+            x if x == (PinShape::CLOCK | PinShape::INVERTED) => write!(f, "CI"),
+            x if x == (PinShape::IN | PinShape::ACTIVE_LOW) => write!(f, "L"),
+            x if x == (PinShape::CLOCK | PinShape::ACTIVE_LOW) => write!(f, "CL"),
+            x if x == (PinShape::OUT | PinShape::ACTIVE_LOW) => write!(f, "V"),
             _ => write!(f, ""),
         }
     }
@@ -178,12 +176,12 @@ impl KicadGenerator {
 
         let components = library.components();
         for component in components {
-            let symbol = component.symbol();
+            let symbol = &component.symbol;
             let ref_des = symbol.attr("ref-des", "U");
             KicadGenerator::write_component_header(
                 &mut f,
                 &ref_des.as_str(),
-                &component.name().as_str(),
+                &component.name.as_str(),
                 &symbol,
             )?;
 
@@ -196,7 +194,7 @@ impl KicadGenerator {
                 KicadGenerator::write_field(
                     &mut f,
                     &ref_des.as_str(),
-                    &component.name().as_str(),
+                    &component.name.as_str(),
                     &params,
                     &text_box,
                 )?;

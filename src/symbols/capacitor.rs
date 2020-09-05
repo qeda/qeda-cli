@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
-use crate::symbols::pinout::Pinout;
+use crate::pinout::*;
 use crate::symbols::SymbolHandler;
 
 pub struct CapacitorSymbol {}
@@ -16,13 +16,16 @@ impl SymbolHandler for CapacitorSymbol {
     fn draw(&self, config: &Config) -> Result<Drawing> {
         debug!("draw capacitor symbol");
 
-        let mut drawing = Drawing::from_svg(include_str!("capacitor.svg"))?;
-        drawing.add_attr("ref-des", "C");
+        let mut pinout = Pinout::from_config(config)?;
+        if !pinout.groups.contains_key("L") {
+            pinout.add_pin(Pin::new("L", "1").kind(PinKind::PASSIVE));
+        }
+        if !pinout.groups.contains_key("R") {
+            pinout.add_pin(Pin::new("R", "2").kind(PinKind::PASSIVE));
+        }
 
-        let mut pinout = Pinout::from_config(config);
-        pinout.add_default("L", "1");
-        pinout.add_default("R", "2");
-        pinout.apply_to(drawing.mut_elements());
+        let mut drawing = Drawing::from_svg(include_str!("capacitor.svg"), pinout)?;
+        drawing.add_attr("ref-des", "C");
 
         Ok(drawing)
     }
