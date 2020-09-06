@@ -109,6 +109,7 @@ struct Svg {
     elements: SvgHash,
     current_x: f64,
     current_y: f64,
+    id_counter: usize,
 }
 
 impl Svg {
@@ -121,7 +122,11 @@ impl Svg {
             match id {
                 ElementId::Defs => return Ok(()), // Skip <defs>
                 ElementId::Path => {
-                    let path_id = node.id().to_string();
+                    let mut path_id = node.id().to_string();
+                    if path_id.is_empty() {
+                        path_id = self.id_counter.to_string();
+                        self.id_counter += 1;
+                    }
                     let polygon = self.to_polygon(&node.attributes())?;
                     if polygon.p.len() == 2 {
                         if polygon.p[0].y == polygon.p[1].y {
@@ -209,45 +214,48 @@ impl Svg {
     }
 
     fn to_ellipse(&mut self, attributes: &Attributes) -> Result<SvgEllipse> {
-        let mut ellipse = SvgEllipse::default();
+        let mut result = SvgEllipse::default();
         for attr in attributes.iter() {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::Cx => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.cx = Svg::convert_units(len)?;
+                        result.cx = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Cy => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.cy = Svg::convert_units(len)?;
+                        result.cy = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Rx => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.rx = Svg::convert_units(len)?;
+                        result.rx = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Ry => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.ry = Svg::convert_units(len)?;
+                        result.ry = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        ellipse.line_width = Svg::convert_units(len)?;
+                        result.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
-                    ellipse.filled = attr.value != AttributeValue::None;
+                    result.filled = attr.value != AttributeValue::None;
                 }
                 _ => (),
             }
         }
-        Ok(ellipse)
+        Ok(result)
     }
 
     fn to_polygon(&mut self, attributes: &Attributes) -> Result<SvgPolygon> {
-        let mut polygon = SvgPolygon::default();
+        let mut result = SvgPolygon::default();
+        self.current_x = 0.0;
+        self.current_y = 0.0;
+
         for attr in attributes.iter() {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::D => {
@@ -264,7 +272,7 @@ impl Svg {
                                     }
                                     self.current_x = x;
                                     self.current_y = y;
-                                    polygon.p.push(SvgPoint {
+                                    result.p.push(SvgPoint {
                                         x,
                                         y,
                                         marker: false,
@@ -277,7 +285,7 @@ impl Svg {
                                         x += self.current_x;
                                     }
                                     self.current_x = x;
-                                    polygon.p.push(SvgPoint {
+                                    result.p.push(SvgPoint {
                                         x,
                                         y,
                                         marker: false,
@@ -290,7 +298,7 @@ impl Svg {
                                         y += self.current_y;
                                     }
                                     self.current_y = y;
-                                    polygon.p.push(SvgPoint {
+                                    result.p.push(SvgPoint {
                                         x,
                                         y,
                                         marker: false,
@@ -303,78 +311,78 @@ impl Svg {
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        polygon.line_width = Svg::convert_units(len)?;
+                        result.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
-                    polygon.filled = attr.value != AttributeValue::None;
+                    result.filled = attr.value != AttributeValue::None;
                 }
                 _ => (),
             }
         }
-        Ok(polygon)
+        Ok(result)
     }
 
     fn to_rect(&mut self, attributes: &Attributes) -> Result<SvgRect> {
-        let mut rect = SvgRect::default();
+        let mut result = SvgRect::default();
         for attr in attributes.iter() {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.x = Svg::convert_units(len)?;
+                        result.x = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Y => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.y = Svg::convert_units(len)?;
+                        result.y = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Width => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.width = Svg::convert_units(len)?;
+                        result.width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Height => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.height = Svg::convert_units(len)?;
+                        result.height = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::StrokeWidth => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        rect.line_width = Svg::convert_units(len)?;
+                        result.line_width = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::Fill => {
-                    rect.filled = attr.value != AttributeValue::None;
+                    result.filled = attr.value != AttributeValue::None;
                 }
                 _ => (),
             }
         }
-        Ok(rect)
+        Ok(result)
     }
 
     fn to_text(&mut self, attributes: &Attributes) -> Result<SvgText> {
-        let mut text = SvgText::default();
+        let mut result = SvgText::default();
         for attr in attributes.iter() {
             match attr.id().ok_or(QedaError::InvalidSvgPath)? {
                 AttributeId::X => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
-                        text.x = Svg::convert_units(len_list.first().unwrap())?;
+                        result.x = Svg::convert_units(len_list.first().unwrap())?;
                     }
                 }
                 AttributeId::Y => {
                     if let AttributeValue::LengthList(ref len_list) = attr.value {
-                        text.y = Svg::convert_units(len_list.first().unwrap())?;
+                        result.y = Svg::convert_units(len_list.first().unwrap())?;
                     }
                 }
                 AttributeId::FontSize => {
                     if let AttributeValue::Length(ref len) = attr.value {
-                        text.height = Svg::convert_units(len)?;
+                        result.height = Svg::convert_units(len)?;
                     }
                 }
                 AttributeId::TextAnchor => {
                     if let AttributeValue::String(ref string) = attr.value {
-                        text.halign = match string.as_ref() {
+                        result.halign = match string.as_ref() {
                             "middle" => HAlign::Center,
                             "end" => HAlign::Right,
                             _ => HAlign::default(),
@@ -383,7 +391,7 @@ impl Svg {
                 }
                 AttributeId::DominantBaseline => {
                     if let AttributeValue::String(ref string) = attr.value {
-                        text.valign = match string.as_ref() {
+                        result.valign = match string.as_ref() {
                             "middle" => VAlign::Middle,
                             "text-before-edge" => VAlign::Top,
                             _ => VAlign::default(),
@@ -393,7 +401,7 @@ impl Svg {
                 _ => (),
             }
         }
-        Ok(text)
+        Ok(result)
     }
 }
 
