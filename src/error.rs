@@ -12,8 +12,8 @@ pub enum QedaError {
     #[error("invalid generator type: '{0}'")]
     InvalidGeneratorType(String),
 
-    #[error("invalid pattern type: '{0}'")]
-    InvalidPatternType(String),
+    #[error("invalid package type: '{0}'")]
+    InvalidPackageType(String),
 
     #[error(
         "Invalid pin count, it should be the same at the both sides: 'count({0})' != 'count({1})'"

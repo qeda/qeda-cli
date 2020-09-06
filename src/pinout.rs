@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove
-
 use linked_hash_map::LinkedHashMap;
 use regex::Regex;
 use yaml_rust::Yaml;

@@ -1,6 +1,7 @@
 pub mod prelude;
 
 mod attribute;
+mod box3d;
 mod geometry;
 mod svg;
 mod symbol_pin;
@@ -12,6 +13,7 @@ use crate::error::*;
 use crate::pinout::Pinout;
 
 pub use attribute::Attribute;
+pub use box3d::Box3D;
 pub use geometry::*;
 pub use prelude::*;
 pub use symbol_pin::SymbolPin;
@@ -21,6 +23,7 @@ use svg::*;
 #[derive(Debug)]
 pub enum Element {
     Attribute(Attribute),
+    Box3D(Box3D),
     Line(Line),
     SymbolPin(SymbolPin),
 }
@@ -29,6 +32,7 @@ impl Transform for Element {
     fn transform(self, t: &Transformation) -> Self {
         match self {
             Element::Attribute(a) => Element::Attribute(a.transform(t)),
+            Element::Box3D(b) => Element::Box3D(b),
             Element::Line(l) => Element::Line(l.transform(t)),
             Element::SymbolPin(p) => Element::SymbolPin(p.transform(t)),
         }
@@ -106,20 +110,15 @@ impl Drawing {
         Ok(())
     }
 
+    /// Adds a `Box3D` object to the drawing.
+    pub fn add_box3d(&mut self, box3d: Box3D) {
+        self.elements.push(Element::Box3D(box3d));
+    }
+
     /// Adds a line object to the drawing.
     pub fn add_line(&mut self, line: Line) {
         self.elements
             .push(Element::Line(line.transform(&self.canvas_transform)));
-    }
-
-    /// Adds an attribute object to the drawing.
-    pub fn add_attr(&mut self, key: &str, value: &str) {
-        self.attrs.insert(key.to_string(), value.to_string());
-    }
-
-    /// Returns the attribute value.
-    pub fn attr(&self, key: &str, def: &str) -> String {
-        self.attrs.get(key).unwrap_or(&def.to_string()).clone()
     }
 
     pub fn find_attribute(&self, id: &str) -> Option<&Attribute> {

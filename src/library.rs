@@ -7,7 +7,7 @@ use crate::component::Component;
 use crate::config::Config;
 use crate::error::*;
 use crate::generators::Generators;
-use crate::patterns::Patterns;
+use crate::packages::Packages;
 use crate::symbols::Symbols;
 
 const ID_SEPARATOR: &str = "/";
@@ -20,7 +20,7 @@ pub struct Library<'a> {
     pub config: Config,
 
     symbols: Symbols<'a>,
-    patterns: Patterns<'a>,
+    packages: Packages<'a>,
 }
 
 impl<'a> Library<'a> {
@@ -37,7 +37,7 @@ impl<'a> Library<'a> {
         Library {
             config: load_config!("qeda.yml"),
             symbols: Symbols::new(),
-            patterns: Patterns::new(),
+            packages: Packages::new(),
             components: Vec::new(),
         }
     }
@@ -193,7 +193,7 @@ impl<'a> Library<'a> {
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
         let config = Config::from_str(yaml)?;
-        let component = Component::from_config(&config, &self.symbols, &self.patterns)?;
+        let component = Component::from_config(&config, &self.symbols, &self.packages)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)
     }
