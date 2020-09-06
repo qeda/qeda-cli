@@ -1,6 +1,6 @@
 [package]
 name = "qeda"
-description = "The tool for easy creating electronic component libraries"
+description = "Tool for creating electronic component libraries"
 version = "0.0.4"
 authors = ["Shamil <shamil@shamil.ru>", "QEDA Authors"]
 repository = "https://github.com/qeda/qeda-rs/"

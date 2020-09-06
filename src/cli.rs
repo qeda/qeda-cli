@@ -38,7 +38,7 @@ pub fn run() -> Result<()> {
 fn cli() -> App<'static, 'static> {
     App::new("qeda")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A tool for creating libraries of electronic components")
+        .about("Tool for creating electronic component libraries")
         .after_help(QEDA_EXAMPLES)
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::DeriveDisplayOrder)
