@@ -60,8 +60,7 @@ impl<'a> Library<'a> {
     /// assert_eq!(lib.components().len(), 1);
     /// ```
     pub fn from_config(config: &Config) -> Result<Self> {
-        let mut lib = Library::new();
-        lib.merge_config(config);
+        let mut lib = Library::new().merge_config(config);
         let components_hash = config.get_hash("components")?;
         let keys = components_hash.keys();
         for key in keys {
@@ -186,8 +185,9 @@ impl<'a> Library<'a> {
         }
     }
 
-    fn merge_config(&mut self, config: &Config) {
-        self.config.merge(config);
+    fn merge_config(mut self, config: &Config) -> Self {
+        self.config = self.config.merge(config);
+        self
     }
 
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {

@@ -4,6 +4,7 @@ use std::path::Path;
 
 use crypto_hash::{Algorithm, Hasher};
 use hex;
+use regex::Regex;
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
 use crate::error::*;
@@ -59,6 +60,65 @@ impl Config {
             .ok_or(QedaError::InvalidElementType(key.to_string(), "hash"))?)
     }
 
+    pub fn get_range(&self, key: &str) -> Result<(f64, f64)> {
+        let elem = self.get_element(key)?;
+        match elem {
+            Yaml::Integer(i) => {
+                let f = *i as f64;
+                Ok((f, f))
+            }
+            Yaml::Real(_) => {
+                let f = elem
+                    .as_f64()
+                    .ok_or(QedaError::InvalidElementType(key.to_string(), "range: f64"))?;
+                Ok((f, f))
+            }
+            Yaml::String(s) => {
+                let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/-)\s*(\d+\.*\d*)").unwrap();
+                let caps = re.captures(s).ok_or(QedaError::InvalidElementType(
+                    key.to_string(),
+                    "range: f64..f64 or f64 +/- f64",
+                ))?;
+                let f1 = caps[1].parse::<f64>()?;
+                let f2 = caps[3].parse::<f64>()?;
+                match &caps[2] {
+                    ".." => Ok((f1, f2)),
+                    "+/-" => Ok((f1 - f2, f1 + f2)),
+                    _ => Err(QedaError::InvalidElementType(
+                        key.to_string(),
+                        "range: f64..f64 or f64 +/- f64",
+                    )
+                    .into()),
+                }
+            }
+            Yaml::Array(a) if a.len() == 2 => {
+                let f1 = a[0]
+                    .as_f64()
+                    .or(a[0].as_i64().and_then(|v| Some(v as f64)))
+                    .ok_or(QedaError::InvalidElementType(
+                        key.to_string(),
+                        "range: [f64, f64]",
+                    ))?;
+                let f2 = a[1]
+                    .as_f64()
+                    .or(a[1].as_i64().and_then(|v| Some(v as f64)))
+                    .ok_or(QedaError::InvalidElementType(
+                        key.to_string(),
+                        "range: [f64, f64]",
+                    ))?;
+                Ok((f1, f2))
+            }
+            _ => Err(QedaError::InvalidElementType(key.to_string(), "range").into()),
+        }
+    }
+
+    pub fn get_str(&self, key: &str) -> Result<&str> {
+        Ok(self
+            .get_element(key)?
+            .as_str()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "str"))?)
+    }
+
     pub fn get_string(&self, key: &str) -> Result<String> {
         Ok(self
             .get_element(key)?
@@ -89,42 +149,48 @@ impl Config {
             .ok_or(QedaError::InvalidElementType(key.to_string(), "float"))?)
     }
 
-    pub fn insert_vec_if_missing(&mut self, key: &str) {
+    pub fn insert_vec_if_missing(self, key: &str) -> Self {
         let mut hash = self.yaml_into_hash();
         let key = Yaml::from_str(key);
         if !hash.contains_key(&key) || !hash[&key].is_array() {
             hash.insert(key, Yaml::Array(vec![]));
         }
-        self.yaml = Yaml::Hash(hash);
+        Config {
+            yaml: Yaml::Hash(hash),
+        }
     }
 
-    pub fn insert_hash_if_missing(&mut self, key: &str) {
+    pub fn insert_hash_if_missing(self, key: &str) -> Self {
         let mut hash = self.yaml_into_hash();
         let key = Yaml::from_str(key);
         if !hash.contains_key(&key) || !hash[&key].as_hash().is_some() {
             hash.insert(key, Yaml::Hash(yaml::Hash::new()));
         }
-        self.yaml = Yaml::Hash(hash);
+        Config {
+            yaml: Yaml::Hash(hash),
+        }
     }
 
-    pub fn push_string_to_vec(&mut self, key: &str, value: &str) {
-        self.insert_vec_if_missing(key);
-        let key = Yaml::from_str(key);
-        let mut hash = self.yaml_into_hash();
-        let mut vec = hash.remove(&key).unwrap().into_vec().unwrap();
+    pub fn push_string_to_vec(self, key: &str, value: &str) -> Self {
+        let yaml_key = Yaml::from_str(key);
+        let mut hash = self.insert_vec_if_missing(key).yaml_into_hash();
+        let mut vec = hash.remove(&yaml_key).unwrap().into_vec().unwrap();
         vec.push(Yaml::from_str(value));
-        hash.insert(key, Yaml::Array(vec));
-        self.yaml = Yaml::Hash(hash);
+        hash.insert(yaml_key, Yaml::Array(vec));
+        Config {
+            yaml: Yaml::Hash(hash),
+        }
     }
 
-    pub fn insert_hash_to_hash(&mut self, key: &str, value: &str) {
-        self.insert_hash_if_missing(key);
-        let key = Yaml::from_str(key);
-        let mut hash = self.yaml_into_hash();
-        let mut child_hash = hash.remove(&key).unwrap().into_hash().unwrap();
+    pub fn insert_hash_to_hash(self, key: &str, value: &str) -> Self {
+        let yaml_key = Yaml::from_str(key);
+        let mut hash = self.insert_hash_if_missing(key).yaml_into_hash();
+        let mut child_hash = hash.remove(&yaml_key).unwrap().into_hash().unwrap();
         child_hash.insert(Yaml::from_str(value), Yaml::Hash(yaml::Hash::new()));
-        hash.insert(key, Yaml::Hash(child_hash));
-        self.yaml = Yaml::Hash(hash);
+        hash.insert(yaml_key, Yaml::Hash(child_hash));
+        Config {
+            yaml: Yaml::Hash(hash),
+        }
     }
 
     pub fn save(&self, path: &str) -> Result<()> {
@@ -141,16 +207,16 @@ impl Config {
         hex::encode(hasher.finish())
     }
 
-    pub fn merge(&mut self, _from: &Config) {
+    pub fn merge(self, _from: &Config) -> Self {
         // TODO: Implement
+        self
     }
 }
 
 // Private methods
 impl Config {
-    fn yaml_into_hash(&self) -> yaml::Hash {
-        // Need to clone as there is no Yaml::as_hash_mut()
-        self.yaml.clone().into_hash().unwrap_or(yaml::Hash::new())
+    fn yaml_into_hash(self) -> yaml::Hash {
+        self.yaml.into_hash().unwrap_or(yaml::Hash::new())
     }
 
     fn update_digest(&self, element: &Yaml, hasher: &mut Hasher) {
@@ -176,5 +242,34 @@ impl Config {
             Yaml::Alias(u) => hasher.write_all(&u.to_le_bytes()).unwrap(),
             _ => (),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn range() -> Result<()> {
+        let config = Config::from_str(
+            r"
+        A: 1
+        B: 1.3
+        C: 1.0..2.0
+        D: 5 .. 6
+        E: 5 +/- 1.1
+        F: [1, 2]
+        G: [2.25, 6.5]
+        ",
+        )?;
+
+        assert_eq!(config.get_range("A")?, (1.0, 1.0));
+        assert_eq!(config.get_range("B")?, (1.3, 1.3));
+        assert_eq!(config.get_range("C")?, (1.0, 2.0));
+        assert_eq!(config.get_range("D")?, (5.0, 6.0));
+        assert_eq!(config.get_range("E")?, (3.9, 6.1));
+        assert_eq!(config.get_range("F")?, (1.0, 2.0));
+        assert_eq!(config.get_range("G")?, (2.25, 6.5));
+        Ok(())
     }
 }

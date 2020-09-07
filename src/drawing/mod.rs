@@ -162,7 +162,6 @@ impl Drawing {
         let caps = re
             .captures(name)
             .ok_or(QedaError::InvalidSvgPinName(name.to_string()))?;
-        ensure!(caps.len() > 1, QedaError::InvalidSvgPinId(name.to_string()));
 
         let name = &caps[1];
         let halign = HAlign::from_str(halign);

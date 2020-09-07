@@ -296,7 +296,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_pinout() -> Result<()> {
+    fn pinout() -> Result<()> {
         let pinout_yaml = r"
         pinout:
           A: 1

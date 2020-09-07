@@ -112,8 +112,7 @@ fn add_component(m: &ArgMatches) -> Result<()> {
     lib.add_component(component_id)?;
 
     Config::create_if_missing(QEDA_YML)?;
-    let mut config = Config::from_file(QEDA_YML)?;
-    config.insert_hash_to_hash("components", component_id);
+    let config = Config::from_file(QEDA_YML)?.insert_hash_to_hash("components", component_id);
     config.save(QEDA_YML)?;
     Ok(())
 }
