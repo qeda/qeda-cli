@@ -47,6 +47,9 @@ pub enum QedaError {
     #[error("missing config file: '{0}'")]
     MissingConfigFile(String),
 
+    #[error("missing dimension: {0}")]
+    MissingDimension(&'static str),
+
     #[error("missing element '{0}' in config")]
     MissingElement(String),
 

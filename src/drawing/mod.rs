@@ -3,19 +3,21 @@ pub mod prelude;
 mod attribute;
 mod box3d;
 mod geometry;
+mod pad;
 mod svg;
 mod symbol_pin;
 
 use regex::Regex;
-use std::collections::HashMap;
 
 use crate::error::*;
 use crate::pinout::Pinout;
 
+pub use prelude::*;
+
 pub use attribute::Attribute;
 pub use box3d::Box3D;
 pub use geometry::*;
-pub use prelude::*;
+pub use pad::*;
 pub use symbol_pin::SymbolPin;
 
 use svg::*;
@@ -25,6 +27,7 @@ pub enum Element {
     Attribute(Attribute),
     Box3D(Box3D),
     Line(Line),
+    Pad(Pad),
     SymbolPin(SymbolPin),
 }
 
@@ -34,6 +37,7 @@ impl Transform for Element {
             Element::Attribute(a) => Element::Attribute(a.transform(t)),
             Element::Box3D(b) => Element::Box3D(b),
             Element::Line(l) => Element::Line(l.transform(t)),
+            Element::Pad(p) => Element::Pad(p), // TODO: Consider transformation
             Element::SymbolPin(p) => Element::SymbolPin(p.transform(t)),
         }
     }
@@ -44,7 +48,6 @@ pub struct Drawing {
     pub elements: Vec<Element>,
 
     canvas_transform: Transformation,
-    attrs: HashMap<String, String>,
 }
 
 impl Drawing {
@@ -53,7 +56,6 @@ impl Drawing {
         Drawing {
             canvas_transform: Transformation::new(),
             elements: Vec::new(),
-            attrs: HashMap::new(),
         }
     }
 
@@ -121,6 +123,12 @@ impl Drawing {
             .push(Element::Line(line.transform(&self.canvas_transform)));
     }
 
+    /// Adds a pad to the drawing.
+    pub fn add_pad(&mut self, pad: Pad) {
+        self.elements.push(Element::Pad(pad)); // TODO: Consider transformation
+    }
+
+    /// Finds a text attribute with the specified `id`.
     pub fn find_attribute(&self, id: &str) -> Option<&Attribute> {
         self.elements.iter().find_map(|e| match e {
             Element::Attribute(attr) if attr.id == id => Some(attr),

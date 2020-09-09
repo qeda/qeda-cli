@@ -14,6 +14,12 @@ pub trait Transform {
 }
 
 #[derive(Clone, Default, Debug)]
+pub struct Size {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Clone, Default, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,

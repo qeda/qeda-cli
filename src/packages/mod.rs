@@ -1,4 +1,6 @@
+mod calc;
 mod chip;
+mod two_pin;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
@@ -6,6 +8,8 @@ use std::fmt::{self, Debug};
 use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
+
+pub use two_pin::TwoPin;
 
 use chip::ChipPackage;
 
