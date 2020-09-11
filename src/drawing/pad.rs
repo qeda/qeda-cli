@@ -15,6 +15,7 @@ impl Default for PadShape {
 
 #[derive(Clone, Default, Debug)]
 pub struct Pad {
+    pub name: String,
     pub origin: Point,
     pub size: Size,
     pub shape: PadShape,
@@ -23,8 +24,21 @@ pub struct Pad {
 }
 
 impl Pad {
+    pub fn new(name: &str) -> Self {
+        Self::default().name(name)
+    }
+
+    pub fn is_smd(&self) -> bool {
+        self.hole.is_none()
+    }
+
     pub fn layers(mut self, layers: Layer) -> Self {
         self.layers = layers;
+        self
+    }
+
+    pub fn name(mut self, name: &str) -> Self {
+        self.name = name.to_string();
         self
     }
 

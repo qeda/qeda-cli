@@ -7,6 +7,7 @@ use crate::error::*;
 use crate::generators::GeneratorHandler;
 use crate::library::Library;
 
+use super::kicad_footprints::KicadFootprints;
 use super::kicad_symbols::KicadSymbols;
 
 const KICADLIB_DIR: &str = "kicadlib";
@@ -22,13 +23,13 @@ impl KicadGenerator {
 impl GeneratorHandler for KicadGenerator {
     fn render(&self, name: &str, library: Library) -> Result<()> {
         let config = library.config;
-        let grid = config.get_f64("generator.symbol.grid")?;
+        let unit = config.get_f64("generator.symbol.unit")?;
 
         let components: Vec<Component> = library
             .components
             .into_iter()
             .map(|mut c| {
-                c.symbol = c.symbol.scale(grid, grid);
+                c.symbol = c.symbol.scale(unit, unit);
                 c
             })
             .collect();
@@ -38,11 +39,11 @@ impl GeneratorHandler for KicadGenerator {
         env::set_current_dir(KICADLIB_DIR)?;
         KicadSymbols::new(name).render(&components, &config)?;
 
-        info!("rendering KiCad pattern library: '{}.pretty'", name);
+        info!("rendering KiCad footprints: '{}.pretty'", name);
         let pattern_dir = format!("{}.pretty", name);
         fs::create_dir_all(&pattern_dir)?;
         env::set_current_dir(&pattern_dir)?;
-        // TODO: render patterns
+        KicadFootprints::default().render(&components, &config)?;
         env::set_current_dir(env::current_dir()?.parent().unwrap())?;
 
         info!("rendering KiCad 3D library: '{}.3dshapes'", name);

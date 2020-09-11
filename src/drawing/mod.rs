@@ -3,6 +3,7 @@ pub mod prelude;
 mod attribute;
 mod box3d;
 mod geometry;
+mod line;
 mod pad;
 mod svg;
 mod symbol_pin;
@@ -17,6 +18,7 @@ pub use prelude::*;
 pub use attribute::Attribute;
 pub use box3d::Box3D;
 pub use geometry::*;
+pub use line::Line;
 pub use pad::*;
 pub use symbol_pin::SymbolPin;
 
@@ -104,6 +106,9 @@ impl Drawing {
                         self.add_line(line.width(vline.width));
                     }
                 }
+                SvgElement::Line(line) => self.add_line(
+                    Line::new(line.p.0.x, line.p.0.y, line.p.1.x, line.p.1.y).width(line.width),
+                ),
                 SvgElement::Text(text) => self.add_attribute(&id, text),
                 _ => (),
             }

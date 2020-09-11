@@ -1,14 +1,57 @@
 base-url: https://raw.githubusercontent.com/qeda/lib/master/
 timeout: 5 # seconds
 
+symbol:
+  grid: 1 # units
+  font-size: # units
+    default: 1
+    ref-des: 1
+    name: 1
+    pin: 1
+    value: 1
+  pitch: 2
+  space: # units
+    default: 0.8
+    pin: 0.8
+    attribute: 0.6
+
+pattern:
+  always-calculate: false
+  clearance: # mm
+    pad-to-silkscreen: 0.2
+    pad-to-pad: 0.2
+    pad-to-mask: 0.05
+    lead-to-hole: 0.1
+  density-level: N
+  font-size: # mm
+    default: 1
+    ref-des: 1.2
+    value: 1
+  polarity:
+    mark: '.' # Available options: '.', '-', '+', 'x', 'o'
+    size: 0.5
+  line-width: # mm
+    default: 0.2
+    assembly: 0.1
+    courtyard: 0.05
+    silkscreen: 0.12
+  maximum: # mm
+    corner-radius: 0.2
+  minimum: # mm
+    ring-width: 0.2
+    hole-diameter: 0.2
+    mask-width: 0.2
+    space-for-iron: 0
+  rounded-pads: true
+  ratio:
+    pad-to-hole: 1.5
+    corner-to-width: 0.25
+  tolerance: # mm
+    default: 0.1
+    fabrication: 0.1
+    placement: 0.1
+
 generator:
   type: kicad
   symbol:
-    grid: 100 # mils
-    font-size: # mils
-      default: 50
-      ref-des: 50
-      name: 50
-      pin: 50
-    space:
-      pin: 40
+    unit: 50 # mils

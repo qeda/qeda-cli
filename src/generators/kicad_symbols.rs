@@ -61,7 +61,7 @@ impl fmt::Display for PinKind {
             x if x == (PinKind::IN | PinKind::OUT) => write!(f, "B"),
             x if x == (PinKind::POWER | PinKind::IN) => write!(f, "W"),
             x if x == (PinKind::POWER | PinKind::OUT) => write!(f, "w"),
-            x if (x & PinKind::HI_Z) == PinKind::HI_Z => write!(f, "T"),
+            x if x.contains(PinKind::HI_Z) => write!(f, "T"),
             _ => write!(f, "U"),
         }
     }
@@ -96,8 +96,10 @@ impl fmt::Display for PinDirection {
 
 pub struct KicadSymbols {
     name: String,
-    font_size_pin: i64,
     font_size_name: i64,
+    font_size_pin: i64,
+    font_size_ref_des: f64,
+    font_size_value: f64,
     space_pin: i64,
 }
 
@@ -106,16 +108,21 @@ impl KicadSymbols {
         KicadSymbols {
             name: name.to_string(),
 
-            font_size_pin: 0,
             font_size_name: 0,
+            font_size_pin: 0,
+            font_size_ref_des: 0.0,
+            font_size_value: 0.0,
             space_pin: 0,
         }
     }
 
     pub fn render(&mut self, components: &Vec<Component>, config: &Config) -> Result<()> {
-        self.font_size_pin = config.get_i64("generator.symbol.font-size.pin")?;
-        self.font_size_name = config.get_i64("generator.symbol.font-size.name")?;
-        self.space_pin = config.get_i64("generator.symbol.space.pin")?;
+        let unit = config.get_f64("generator.symbol.unit")?;
+        self.font_size_name = (unit * config.get_f64("symbol.font-size.name")?).round() as i64;
+        self.font_size_pin = (unit * config.get_f64("symbol.font-size.pin")?).round() as i64;
+        self.font_size_ref_des = (unit * config.get_f64("symbol.font-size.ref-des")?).round();
+        self.font_size_value = (unit * config.get_f64("symbol.font-size.value")?).round();
+        self.space_pin = (unit * config.get_f64("symbol.space.pin")?).round() as i64;
 
         let mut f = File::create(format!("{}.lib", self.name))?;
         writeln!(f, "EESchema-LIBRARY Version 2.4")?;
@@ -128,6 +135,7 @@ impl KicadSymbols {
                 symbol.parts.len() > 0,
                 QedaError::InvalidSymbolNoParts(name.to_string())
             );
+            info!("  • {}", name);
 
             // Header
             writeln!(f, "{}", self.header(name, symbol))?;
@@ -135,11 +143,14 @@ impl KicadSymbols {
             // Fields
             let first_part = symbol.parts.first().unwrap();
             if let Some(ref_des) = first_part.find_attribute("ref-des") {
-                writeln!(f, "{}", self.field(0, ref_des))?;
+                let mut ref_des = ref_des.clone();
+                ref_des.font_size = self.font_size_ref_des;
+                writeln!(f, "{}", self.field(0, &ref_des))?;
             }
             if let Some(value) = first_part.find_attribute("value") {
                 let mut value = value.clone();
                 value.value = name.clone();
+                value.font_size = self.font_size_value;
                 writeln!(f, "{}", self.field(1, &value))?;
             }
 

@@ -1,5 +1,5 @@
-use super::geometry::*;
 use super::prelude::*;
+use super::{Line, Point, Transform, Transformation};
 
 use crate::pinout::Pin;
 

@@ -9,13 +9,15 @@ pub struct TwoPin {
 
 impl TwoPin {
     pub fn draw(&self, drawing: &mut Drawing) {
-        let pad_left = Pad::default()
+        let pad_left = Pad::new("1")
             .shape(PadShape::Rect)
             .size(self.pad_size.0, self.pad_size.1)
-            .origin(0.0, -self.pad_distance / 2.0)
+            .origin(-self.pad_distance / 2.0, 0.0)
             .layers(Layer::COPPER_TOP);
-        let pad_right = pad_left.clone()
-            .origin(0.0, self.pad_distance / 2.0);
+        let pad_right = pad_left
+            .clone()
+            .name("2")
+            .origin(self.pad_distance / 2.0, 0.0);
 
         drawing.add_pad(pad_left);
         drawing.add_pad(pad_right);

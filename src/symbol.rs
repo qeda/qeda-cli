@@ -10,6 +10,7 @@ pub struct Symbol {
 }
 
 impl Symbol {
+    /// Creates a new `Symbol`.
     pub fn new() -> Self {
         Symbol {
             ref_des: "U".to_string(),
@@ -20,6 +21,7 @@ impl Symbol {
         }
     }
 
+    /// Adds part to the `Symbol`.
     pub fn add_part(&mut self, part: Drawing) {
         if let Some(ref_des) = part.find_attribute("ref-des") {
             self.ref_des = ref_des.value.clone();
