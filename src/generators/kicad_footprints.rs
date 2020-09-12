@@ -31,11 +31,11 @@ impl fmt::Display for Layer {
             layers.push("B.Cu");
         }
 
-        if self.contains(Layer::SILK_TOP | Layer::SILK_BOTTOM) {
+        if self.contains(Layer::SILKSCREEN_TOP | Layer::SILKSCREEN_BOTTOM) {
             layers.push("*.SilkS");
-        } else if self.contains(Layer::SILK_TOP) {
+        } else if self.contains(Layer::SILKSCREEN_TOP) {
             layers.push("F.SilkS");
-        } else if self.contains(Layer::SILK_BOTTOM) {
+        } else if self.contains(Layer::SILKSCREEN_BOTTOM) {
             layers.push("B.SilkS");
         }
 
@@ -55,6 +55,14 @@ impl fmt::Display for Layer {
             layers.push("B.Paste");
         }
 
+        if self.contains(Layer::ASSEMBLY_TOP | Layer::ASSEMBLY_BOTTOM) {
+            layers.push("*.Fab");
+        } else if self.contains(Layer::ASSEMBLY_TOP) {
+            layers.push("F.Fab");
+        } else if self.contains(Layer::ASSEMBLY_BOTTOM) {
+            layers.push("B.Fab");
+        }
+
         write!(f, "{}", layers.join(" "))
     }
 }
@@ -69,6 +77,27 @@ impl KicadFootprints {
             writeln!(f, "(module {name} (layer F.Cu)", name = name)?;
             for element in &pattern.elements {
                 match element {
+                    Element::Attribute(a) => {
+                        let (kind, value) = match a.id.as_str() {
+                            "ref-des" => ("reference", "REF**".to_string()),
+                            "value" => ("value", name.clone()),
+                            _ => ("user", a.value.clone()),
+                        };
+                        writeln!(
+                            f,
+                            "  (fp_text {kind} {value} (at {x} {y}) (layer {layer})",
+                            kind = kind,
+                            value = value,
+                            x = a.origin.x,
+                            y = a.origin.y,
+                            layer = a.layer,
+                        )?;
+                        writeln!(f, "    (effects (font (size {font_size} {font_size}) (thickness {line_width})))",
+                            font_size = a.font_size,
+                            line_width = a.line_width,
+                        )?;
+                        writeln!(f, "  )")?;
+                    }
                     Element::Pad(p) => {
                         writeln!(
                             f,

@@ -75,8 +75,8 @@ bitflags! {
         const NONE              = 0x00000000;
         const COPPER_TOP        = 0x00000001;
         const COPPER_BOTTOM     = 0x00000002;
-        const SILK_TOP          = 0x00000004;
-        const SILK_BOTTOM       = 0x00000008;
+        const SILKSCREEN_TOP    = 0x00000004;
+        const SILKSCREEN_BOTTOM = 0x00000008;
         const MASK_TOP          = 0x00000010;
         const MASK_BOTTOM       = 0x00000020;
         const PASTE_TOP         = 0x00000040;

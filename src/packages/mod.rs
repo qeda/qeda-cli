@@ -14,8 +14,8 @@ pub use two_pin::TwoPin;
 use chip::ChipPackage;
 
 pub trait PackageHandler {
-    fn draw_pattern(&self, config: &Config) -> Result<Drawing>;
-    fn draw_model(&self, config: &Config) -> Result<Drawing>;
+    fn draw_pattern(&self, config: &Config, lib_config: &Config) -> Result<Drawing>;
+    fn draw_model(&self, config: &Config, lib_config: &Config) -> Result<Drawing>;
 }
 
 impl Debug for dyn PackageHandler {

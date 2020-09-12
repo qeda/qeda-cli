@@ -18,9 +18,8 @@ const YAML_SUFFIX: &str = ".yml";
 pub struct Library<'a> {
     pub components: Vec<Component>,
     pub config: Config,
-
-    symbols: Symbols<'a>,
-    packages: Packages<'a>,
+    pub symbols: Symbols<'a>,
+    pub packages: Packages<'a>,
 }
 
 impl<'a> Library<'a> {
@@ -193,7 +192,7 @@ impl<'a> Library<'a> {
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
         let config = Config::from_str(yaml)?;
-        let component = Component::from_config(&config, &self.symbols, &self.packages)?;
+        let component = Component::from_config(&config, &self)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)
     }

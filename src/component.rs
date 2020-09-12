@@ -1,9 +1,8 @@
 use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
-use crate::packages::Packages;
+use crate::library::Library;
 use crate::symbol::Symbol;
-use crate::symbols::Symbols;
 
 #[derive(Debug)]
 pub struct Component {
@@ -16,13 +15,17 @@ pub struct Component {
 
 impl Component {
     /// Creates a new `Component` from `Config`.
-    pub fn from_config(config: &Config, symbols: &Symbols, packages: &Packages) -> Result<Self> {
+    pub fn from_config(config: &Config, lib: &Library) -> Result<Self> {
         let name = config.get_string("name")?;
-        let symbol_handler = symbols.get_handler(&config.get_string("symbol.type")?)?;
-        let symbol = symbol_handler.draw(&config)?;
-        let package_handler = packages.get_handler(&config.get_string("package.type")?)?;
-        let pattern = package_handler.draw_pattern(&config)?;
-        let model = package_handler.draw_model(&config)?;
+        let symbol_handler = lib
+            .symbols
+            .get_handler(&config.get_string("symbol.type")?)?;
+        let symbol = symbol_handler.draw(&config, &lib.config)?;
+        let package_handler = lib
+            .packages
+            .get_handler(&config.get_string("package.type")?)?;
+        let pattern = package_handler.draw_pattern(&config, &lib.config)?;
+        let model = package_handler.draw_model(&config, &lib.config)?;
         let digest = config.calc_digest();
         Ok(Component {
             name,

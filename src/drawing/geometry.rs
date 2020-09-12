@@ -19,6 +19,14 @@ pub struct Size {
     pub y: f64,
 }
 
+impl Transform for Size {
+    fn transform(mut self, t: &Transformation) -> Self {
+        self.x *= t.scale_x;
+        self.y *= t.scale_y;
+        self
+    }
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct Point {
     pub x: f64,

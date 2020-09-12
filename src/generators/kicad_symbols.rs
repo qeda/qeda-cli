@@ -107,7 +107,6 @@ impl KicadSymbols {
     pub fn new(name: &str) -> Self {
         KicadSymbols {
             name: name.to_string(),
-
             font_size_name: 0,
             font_size_pin: 0,
             font_size_ref_des: 0.0,

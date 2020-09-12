@@ -29,7 +29,7 @@ pattern:
     value: 1
   polarity:
     mark: '.' # Available options: '.', '-', '+', 'x', 'o'
-    size: 0.5
+    size: 0.5 # mm
   line-width: # mm
     default: 0.2
     assembly: 0.1

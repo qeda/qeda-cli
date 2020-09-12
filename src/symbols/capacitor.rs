@@ -15,7 +15,7 @@ impl CapacitorSymbol {
 }
 
 impl SymbolHandler for CapacitorSymbol {
-    fn draw(&self, config: &Config) -> Result<Symbol> {
+    fn draw(&self, config: &Config, _lib: &Config) -> Result<Symbol> {
         debug!("draw capacitor symbol");
 
         let mut pinout = Pinout::from_config(config)?;

@@ -13,7 +13,7 @@ impl ChipPackage {
 }
 
 impl PackageHandler for ChipPackage {
-    fn draw_pattern(&self, config: &Config) -> Result<Drawing> {
+    fn draw_pattern(&self, config: &Config, lib_config: &Config) -> Result<Drawing> {
         debug!("draw chip pattern");
 
         let body_size_x = config.get_range("package.body-size-x")?;
@@ -46,11 +46,11 @@ impl PackageHandler for ChipPackage {
         two_pin.courtyard = ipc.courtyard;
 
         let mut drawing = Drawing::new();
-        two_pin.draw(&mut drawing);
+        two_pin.draw(&mut drawing, lib_config)?;
         Ok(drawing)
     }
 
-    fn draw_model(&self, _config: &Config) -> Result<Drawing> {
+    fn draw_model(&self, _config: &Config, _lib_config: &Config) -> Result<Drawing> {
         debug!("draw chip model");
         let mut drawing = Drawing::new();
         drawing.add_box3d(Box3D::new().origin(0.0, 1.0, 2.0).dimensions(3.0, 4.0, 5.0));

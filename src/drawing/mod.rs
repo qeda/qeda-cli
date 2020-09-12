@@ -37,9 +37,9 @@ impl Transform for Element {
     fn transform(self, t: &Transformation) -> Self {
         match self {
             Element::Attribute(a) => Element::Attribute(a.transform(t)),
-            Element::Box3D(b) => Element::Box3D(b),
+            Element::Box3D(b) => Element::Box3D(b), // Don't apply 2D transformation
             Element::Line(l) => Element::Line(l.transform(t)),
-            Element::Pad(p) => Element::Pad(p), // TODO: Consider transformation
+            Element::Pad(p) => Element::Pad(p.transform(t)),
             Element::SymbolPin(p) => Element::SymbolPin(p.transform(t)),
         }
     }
@@ -109,7 +109,13 @@ impl Drawing {
                 SvgElement::Line(line) => self.add_line(
                     Line::new(line.p.0.x, line.p.0.y, line.p.1.x, line.p.1.y).width(line.width),
                 ),
-                SvgElement::Text(text) => self.add_attribute(&id, text),
+                SvgElement::Text(text) => {
+                    let attr = Attribute::new(&id, &text.text)
+                        .origin(text.x, text.y)
+                        .font_size(text.height)
+                        .align(text.halign, text.valign);
+                    self.add_attribute(attr);
+                }
                 _ => (),
             }
         }
@@ -117,18 +123,28 @@ impl Drawing {
         Ok(())
     }
 
+    /// Adds an `Attribute` object to the drawing.
+    #[inline]
+    pub fn add_attribute(&mut self, attr: Attribute) {
+        self.elements
+            .push(Element::Attribute(attr.transform(&self.canvas_transform)));
+    }
+
     /// Adds a `Box3D` object to the drawing.
+    #[inline]
     pub fn add_box3d(&mut self, box3d: Box3D) {
         self.elements.push(Element::Box3D(box3d));
     }
 
     /// Adds a line object to the drawing.
+    #[inline]
     pub fn add_line(&mut self, line: Line) {
         self.elements
             .push(Element::Line(line.transform(&self.canvas_transform)));
     }
 
     /// Adds a pad to the drawing.
+    #[inline]
     pub fn add_pad(&mut self, pad: Pad) {
         self.elements.push(Element::Pad(pad)); // TODO: Consider transformation
     }
@@ -151,15 +167,6 @@ impl Transform for Drawing {
 
 // Private methods
 impl Drawing {
-    fn add_attribute(&mut self, id: &str, text: SvgText) {
-        let attr = Attribute::new(id, &text.text)
-            .origin(text.x, text.y)
-            .font_size(text.height)
-            .align(text.halign, text.valign)
-            .transform(&self.canvas_transform);
-        self.elements.push(Element::Attribute(attr));
-    }
-
     fn add_symbol_pin(&mut self, id: &str, pinout: &Pinout, line: Line) -> Result<()> {
         let id_elems: Vec<&str> = id.split(':').collect();
         ensure!(

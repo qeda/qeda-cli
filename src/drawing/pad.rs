@@ -1,4 +1,4 @@
-use super::{Layer, Point, Size};
+use super::*;
 
 #[derive(Clone, Debug)]
 pub enum PadShape {
@@ -56,6 +56,15 @@ impl Pad {
     pub fn size(mut self, x: f64, y: f64) -> Self {
         self.size.x = x;
         self.size.y = y;
+        self
+    }
+}
+
+impl Transform for Pad {
+    fn transform(mut self, t: &Transformation) -> Self {
+        self.origin = self.origin.transform(t);
+        self.size = self.size.transform(t);
+        // TODO: Consider rotation
         self
     }
 }
