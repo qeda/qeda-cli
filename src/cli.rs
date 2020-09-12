@@ -112,7 +112,8 @@ fn add_component(m: &ArgMatches) -> Result<()> {
     lib.add_component(component_id)?;
 
     Config::create_if_missing(QEDA_YML)?;
-    let config = Config::from_file(QEDA_YML)?.insert_hash_to_hash("components", component_id);
+    let mut config = Config::from_yaml_file(QEDA_YML)?;
+    config.insert_object("components", component_id)?;
     config.save(QEDA_YML)?;
     Ok(())
 }
@@ -149,7 +150,7 @@ fn generate(m: &ArgMatches) -> Result<()> {
         QedaError::MissingConfigFile(QEDA_YML.to_string())
     );
 
-    let config = Config::from_file(QEDA_YML)?;
+    let config = Config::from_yaml_file(QEDA_YML)?;
     let lib = Library::from_config(&config)?;
     lib.generate(m.value_of("library").unwrap())?;
     Ok(())

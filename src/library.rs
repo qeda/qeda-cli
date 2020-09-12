@@ -53,17 +53,17 @@ impl<'a> Library<'a> {
     /// components:
     ///   capacitor/c0603: {}
     /// ";
-    /// let config = Config::from_str(yaml).unwrap();
+    /// let config = Config::from_yaml(yaml).unwrap();
     /// let lib = Library::from_config(&config).unwrap();
     ///
-    /// assert_eq!(lib.components().len(), 1);
+    /// assert_eq!(lib.components.len(), 1);
     /// ```
     pub fn from_config(config: &Config) -> Result<Self> {
         let mut lib = Library::new().merge_config(config);
-        let components_hash = config.get_hash("components")?;
+        let components_hash = config.get_object("components")?;
         let keys = components_hash.keys();
         for key in keys {
-            lib.add_component(key.as_str().unwrap())?;
+            lib.add_component(key.as_str())?;
         }
         Ok(lib)
     }
@@ -78,7 +78,7 @@ impl<'a> Library<'a> {
     /// let mut lib = Library::new();
     /// lib.add_component("capacitor/c0603").unwrap();
     ///
-    /// assert_eq!(lib.components().len(), 1);
+    /// assert_eq!(lib.components.len(), 1);
     /// ```
     pub fn add_component(&mut self, id: &str) -> Result<()> {
         let id = id.to_lowercase();
@@ -191,7 +191,7 @@ impl<'a> Library<'a> {
 
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
-        let config = Config::from_str(yaml)?;
+        let config = Config::from_yaml(yaml)?;
         let component = Component::from_config(&config, &self)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)

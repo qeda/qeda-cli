@@ -5,34 +5,47 @@ use std::path::Path;
 use crypto_hash::{Algorithm, Hasher};
 use hex;
 use regex::Regex;
+use serde_json::{Map, Number, Value};
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
 use crate::error::*;
 
 #[derive(Debug)]
 pub struct Config {
-    yaml: Yaml,
+    json: Value,
 }
 
 impl Config {
-    pub fn new() -> Config {
+    /// Creates an empty `Config`.
+    pub fn new() -> Self {
         Config {
-            yaml: Yaml::Hash(yaml::Hash::new()),
+            json: Value::Object(Map::new()),
         }
     }
 
-    pub fn from_file(path: &str) -> Result<Config> {
-        Self::from_str(&fs::read_to_string(path)?)
+    /// Creates a new `Config` from JSON string.
+    pub fn from_json(json: &str) -> Result<Config> {
+        let value: Value = serde_json::from_str(json)?;
+        Ok(Config { json: value })
     }
 
-    pub fn from_str(yaml: &str) -> Result<Config> {
+    /// Creates a new `Config` from YAML file.
+    pub fn from_yaml_file(path: &str) -> Result<Config> {
+        Self::from_yaml(&fs::read_to_string(path)?)
+    }
+
+    /// Creates a new `Config` from YAML string.
+    pub fn from_yaml(yaml: &str) -> Result<Config> {
         let mut docs = YamlLoader::load_from_str(yaml)?;
         ensure!(docs.len() > 0, QedaError::InvalidConfig);
-        Ok(Config {
-            yaml: docs.pop().unwrap(),
-        })
+        let mut json = Self::yaml_to_json(docs.pop().unwrap())?;
+        if json == Value::Null {
+            json = Value::Object(Map::new());
+        }
+        Ok(Config { json: json })
     }
 
+    /// Creates a new file if it doesn't exist.
     pub fn create_if_missing(path: &str) -> Result<()> {
         if !Path::new(path).exists() {
             fs::write(path, b"---")?;
@@ -40,40 +53,50 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_element(&self, key: &str) -> Result<&Yaml> {
+    pub fn get_bool(&self, key: &str) -> Result<bool> {
+        Ok(self
+            .get_element(key)?
+            .as_bool()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "bool"))?)
+    }
+
+    /// Returns a config element.
+    pub fn get_element(&self, key: &str) -> Result<&Value> {
         let keys: Vec<&str> = key.split(".").collect();
-        let mut element = &self.yaml[keys[0]];
+        let mut element = &self.json[keys[0]];
         for key in &keys[1..] {
             element = &element[*key];
         }
-        if element.is_badvalue() {
+        if element.is_null() {
             Err(QedaError::MissingElement(key.to_string()).into())
         } else {
             Ok(element)
         }
     }
 
-    pub fn get_hash(&self, key: &str) -> Result<&yaml::Hash> {
+    pub fn get_i64(&self, key: &str) -> Result<i64> {
         Ok(self
             .get_element(key)?
-            .as_hash()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "hash"))?)
+            .as_f64()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?
+            .round() as i64)
+    }
+
+    pub fn get_object(&self, key: &str) -> Result<&Map<String, Value>> {
+        Ok(self
+            .get_element(key)?
+            .as_object()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "object"))?)
     }
 
     pub fn get_range(&self, key: &str) -> Result<(f64, f64)> {
         let elem = self.get_element(key)?;
         match elem {
-            Yaml::Integer(i) => {
-                let f = *i as f64;
+            Value::Number(n) => {
+                let f = n.as_f64().unwrap();
                 Ok((f, f))
             }
-            Yaml::Real(_) => {
-                let f = elem
-                    .as_f64()
-                    .ok_or(QedaError::InvalidElementType(key.to_string(), "range: f64"))?;
-                Ok((f, f))
-            }
-            Yaml::String(s) => {
+            Value::String(s) => {
                 let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/-)\s*(\d+\.*\d*)").unwrap();
                 let caps = re.captures(s).ok_or(QedaError::InvalidElementType(
                     key.to_string(),
@@ -91,7 +114,7 @@ impl Config {
                     .into()),
                 }
             }
-            Yaml::Array(a) if a.len() == 2 => {
+            Value::Array(a) if a.len() == 2 => {
                 let f1 = a[0]
                     .as_f64()
                     .or(a[0].as_i64().and_then(|v| Some(v as f64)))
@@ -116,7 +139,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_str()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "str"))?)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "string"))?)
     }
 
     pub fn get_string(&self, key: &str) -> Result<String> {
@@ -127,83 +150,47 @@ impl Config {
             .to_string())
     }
 
-    pub fn get_i64(&self, key: &str) -> Result<i64> {
-        Ok(self
-            .get_element(key)?
-            .as_i64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "integer"))?)
-    }
-
     pub fn get_u64(&self, key: &str) -> Result<u64> {
         Ok(self
             .get_element(key)?
-            .as_i64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "integer"))? as u64)
+            .as_f64()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?
+            .round() as u64)
     }
 
     pub fn get_f64(&self, key: &str) -> Result<f64> {
-        let value = self.get_element(key)?;
-        Ok(value
+        Ok(self
+            .get_element(key)?
             .as_f64()
-            .or(value.as_i64().and_then(|v| Some(v as f64)))
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "float"))?)
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?)
     }
 
-    pub fn insert_vec_if_missing(self, key: &str) -> Self {
-        let mut hash = self.yaml_into_hash();
-        let key = Yaml::from_str(key);
-        if !hash.contains_key(&key) || !hash[&key].is_array() {
-            hash.insert(key, Yaml::Array(vec![]));
+    pub fn insert_object(&mut self, key: &str, value: &str) -> Result<()> {
+        let map = self.json.as_object_mut().unwrap();
+        if !map.contains_key(key) {
+            // Insert child if doesn't exist
+            map.insert(key.to_string(), Value::Object(Map::new()));
         }
-        Config {
-            yaml: Yaml::Hash(hash),
-        }
+        let child = map[key]
+            .as_object_mut()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "object"))?;
+        child.insert(value.to_string(), Value::Object(Map::new()));
+        Ok(())
     }
 
-    pub fn insert_hash_if_missing(self, key: &str) -> Self {
-        let mut hash = self.yaml_into_hash();
-        let key = Yaml::from_str(key);
-        if !hash.contains_key(&key) || !hash[&key].as_hash().is_some() {
-            hash.insert(key, Yaml::Hash(yaml::Hash::new()));
-        }
-        Config {
-            yaml: Yaml::Hash(hash),
-        }
-    }
+    pub fn save(self, path: &str) -> Result<()> {
+        let yaml = Self::json_to_yaml(self.json)?;
 
-    pub fn push_string_to_vec(self, key: &str, value: &str) -> Self {
-        let yaml_key = Yaml::from_str(key);
-        let mut hash = self.insert_vec_if_missing(key).yaml_into_hash();
-        let mut vec = hash.remove(&yaml_key).unwrap().into_vec().unwrap();
-        vec.push(Yaml::from_str(value));
-        hash.insert(yaml_key, Yaml::Array(vec));
-        Config {
-            yaml: Yaml::Hash(hash),
-        }
-    }
-
-    pub fn insert_hash_to_hash(self, key: &str, value: &str) -> Self {
-        let yaml_key = Yaml::from_str(key);
-        let mut hash = self.insert_hash_if_missing(key).yaml_into_hash();
-        let mut child_hash = hash.remove(&yaml_key).unwrap().into_hash().unwrap();
-        child_hash.insert(Yaml::from_str(value), Yaml::Hash(yaml::Hash::new()));
-        hash.insert(yaml_key, Yaml::Hash(child_hash));
-        Config {
-            yaml: Yaml::Hash(hash),
-        }
-    }
-
-    pub fn save(&self, path: &str) -> Result<()> {
         let mut yaml_string = String::new();
         let mut emitter = YamlEmitter::new(&mut yaml_string);
-        emitter.dump(&self.yaml)?;
+        emitter.dump(&yaml)?;
         fs::write(path, yaml_string.as_bytes())?;
         Ok(())
     }
 
     pub fn calc_digest(&self) -> String {
         let mut hasher = Hasher::new(Algorithm::SHA256);
-        self.update_digest(&self.yaml, &mut hasher);
+        self.update_digest(&self.json, &mut hasher);
         hex::encode(hasher.finish())
     }
 
@@ -215,31 +202,74 @@ impl Config {
 
 // Private methods
 impl Config {
-    fn yaml_into_hash(self) -> yaml::Hash {
-        self.yaml.into_hash().unwrap_or(yaml::Hash::new())
+    fn json_to_yaml(json: Value) -> Result<Yaml> {
+        Ok(match json {
+            Value::Null => Yaml::Null,
+            Value::Bool(b) => Yaml::Boolean(b),
+            Value::Number(n) => Yaml::Real(n.to_string()),
+            Value::String(s) => Yaml::String(s),
+            Value::Array(a) => {
+                let mut arr = Vec::new();
+                for v in a {
+                    arr.push(Self::json_to_yaml(v)?);
+                }
+                Yaml::Array(arr)
+            }
+            Value::Object(o) => {
+                let mut hash = yaml::Hash::new();
+                for (k, v) in o {
+                    hash.insert(Yaml::from_str(&k), Self::json_to_yaml(v)?);
+                }
+                Yaml::Hash(hash)
+            }
+        })
     }
 
-    fn update_digest(&self, element: &Yaml, hasher: &mut Hasher) {
-        match element {
-            Yaml::Real(s) | Yaml::String(s) => hasher.write_all(s.as_bytes()).unwrap(),
-            Yaml::Integer(i) => hasher.write_all(&i.to_le_bytes()).unwrap(),
-            Yaml::Boolean(b) => {
-                let b = *b as u8;
-                hasher.write_all(&b.to_le_bytes()).unwrap()
-            }
+    fn yaml_to_json(yaml: Yaml) -> Result<Value> {
+        Ok(match yaml {
+            Yaml::Real(s) => Value::Number(Number::from_f64(s.parse().unwrap()).unwrap()),
+            Yaml::Integer(i) => Value::Number(Number::from_f64(i as f64).unwrap()),
+            Yaml::String(s) => Value::String(s),
+            Yaml::Boolean(b) => Value::Bool(b),
             Yaml::Array(a) => {
+                let mut arr = Vec::new();
+                for v in a {
+                    arr.push(Self::yaml_to_json(v)?);
+                }
+                Value::Array(arr)
+            }
+            Yaml::Hash(h) => {
+                let mut map = Map::new();
+                for (k, v) in h {
+                    ensure!(k.as_str().is_some(), QedaError::InvalidConfig);
+                    map.insert(k.into_string().unwrap(), Self::yaml_to_json(v)?);
+                }
+                Value::Object(map)
+            }
+            Yaml::Null => Value::Null,
+            _ => Value::default(),
+        })
+    }
+
+    fn update_digest(&self, element: &Value, hasher: &mut Hasher) {
+        match element {
+            Value::String(s) => hasher.write_all(s.as_bytes()).unwrap(),
+            Value::Number(n) => hasher
+                .write_all(&n.as_f64().unwrap().to_le_bytes())
+                .unwrap(),
+            Value::Bool(b) => hasher.write_all(&(*b as u8).to_le_bytes()).unwrap(),
+            Value::Array(a) => {
                 for e in a {
                     self.update_digest(e, hasher);
                 }
             }
-            Yaml::Hash(h) => {
-                let keys = h.keys();
+            Value::Object(o) => {
+                let keys = o.keys();
                 for key in keys {
-                    hasher.write_all(key.as_str().unwrap().as_bytes()).unwrap();
-                    self.update_digest(h.get(key).unwrap(), hasher);
+                    hasher.write_all(key.as_str().as_bytes()).unwrap();
+                    self.update_digest(o.get(key).unwrap(), hasher);
                 }
             }
-            Yaml::Alias(u) => hasher.write_all(&u.to_le_bytes()).unwrap(),
             _ => (),
         }
     }
@@ -250,8 +280,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn element() {
+        let config = Config::from_yaml(
+            r"
+            A:
+              B:
+                C: 1
+            ",
+        )
+        .unwrap();
+
+        assert!(config.get_element("A.B.C").is_ok());
+        assert!(config.get_element("A.B.D").is_err());
+        assert!(config.get_element("B").is_err());
+    }
+
+    #[test]
     fn range() -> Result<()> {
-        let config = Config::from_str(
+        let config = Config::from_yaml(
             r"
         A: 1
         B: 1.3
@@ -270,6 +316,28 @@ mod tests {
         assert_eq!(config.get_range("E")?, (3.9, 6.1));
         assert_eq!(config.get_range("F")?, (1.0, 2.0));
         assert_eq!(config.get_range("G")?, (2.25, 6.5));
+        Ok(())
+    }
+
+    #[test]
+    fn json() -> Result<()> {
+        let config = Config::from_json(
+            r#"{
+        "A": 1,
+        "B": 1.3,
+        "C": "str",
+        "D": [5, 6],
+        "E": { "E1": 1, "E2": false },
+        "F": [{ "F1": null }, { "F2": "null" } ],
+        "G": true
+            }"#,
+        )?;
+
+        assert_eq!(config.get_i64("A")?, 1);
+        assert_eq!(config.get_f64("B")?, 1.3);
+        assert_eq!(config.get_str("C")?, "str");
+        assert_eq!(config.get_bool("G")?, true);
+
         Ok(())
     }
 }
