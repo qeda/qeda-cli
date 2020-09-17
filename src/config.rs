@@ -10,6 +10,37 @@ use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
 use crate::error::*;
 
+#[derive(Debug, Default)]
+pub struct Range(pub f64, pub f64);
+
+impl Range {
+    #[inline]
+    pub fn max(&self) -> f64 {
+        self.1
+    }
+
+    #[inline]
+    pub fn min(&self) -> f64 {
+        self.0
+    }
+
+    #[inline]
+    pub fn nom(&self) -> f64 {
+        (self.0 + self.1) / 2.0
+    }
+
+    #[inline]
+    pub fn tol(&self) -> f64 {
+        self.1 - self.0
+    }
+}
+
+impl PartialEq for Range {
+    fn eq(&self, other: &Self) -> bool {
+        (self.0 == other.0) && (self.1 == other.1)
+    }
+}
+
 #[derive(Debug)]
 pub struct Config {
     json: Value,
@@ -53,6 +84,9 @@ impl Config {
         Ok(())
     }
 
+    /// Returns a `bool` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_bool(&self, key: &str) -> Result<bool> {
         Ok(self
             .get_element(key)?
@@ -74,6 +108,19 @@ impl Config {
         }
     }
 
+    /// Returns a `f64` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
+    pub fn get_f64(&self, key: &str) -> Result<f64> {
+        Ok(self
+            .get_element(key)?
+            .as_f64()
+            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?)
+    }
+
+    /// Returns a `i64` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_i64(&self, key: &str) -> Result<i64> {
         Ok(self
             .get_element(key)?
@@ -82,6 +129,9 @@ impl Config {
             .round() as i64)
     }
 
+    /// Returns an `Object` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_object(&self, key: &str) -> Result<&Map<String, Value>> {
         Ok(self
             .get_element(key)?
@@ -89,12 +139,57 @@ impl Config {
             .ok_or(QedaError::InvalidElementType(key.to_string(), "object"))?)
     }
 
-    pub fn get_range(&self, key: &str) -> Result<(f64, f64)> {
+    /// Returns a pair config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
+    pub fn get_pair(&self, key: &str) -> Result<(f64, f64)> {
         let elem = self.get_element(key)?;
         match elem {
             Value::Number(n) => {
                 let f = n.as_f64().unwrap();
                 Ok((f, f))
+            }
+            Value::String(s) => {
+                let re = Regex::new(r"(\d+\.*\d*)\s*;\s*(\d+\.*\d*)").unwrap();
+                let caps = re.captures(s).ok_or(QedaError::InvalidElementType(
+                    key.to_string(),
+                    "pair: f64;f64",
+                ))?;
+                let f1 = caps[1].parse::<f64>()?;
+                let f2 = caps[2].parse::<f64>()?;
+                Ok((f1, f2))
+            }
+            Value::Array(a) if a.len() == 2 => {
+                let f1 = a[0]
+                    .as_f64()
+                    .or(a[0].as_i64().and_then(|v| Some(v as f64)))
+                    .ok_or(QedaError::InvalidElementType(
+                        key.to_string(),
+                        "range: [f64, f64]",
+                    ))?;
+                let f2 = a[1]
+                    .as_f64()
+                    .or(a[1].as_i64().and_then(|v| Some(v as f64)))
+                    .ok_or(QedaError::InvalidElementType(
+                        key.to_string(),
+                        "range: [f64, f64]",
+                    ))?;
+                Ok((f1, f2))
+            }
+            _ => Err(QedaError::InvalidElementType(key.to_string(), "pair").into()),
+        }
+    }
+
+    /// Returns a range config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key or
+    /// a range has invalid format.
+    pub fn get_range(&self, key: &str) -> Result<Range> {
+        let elem = self.get_element(key)?;
+        match elem {
+            Value::Number(n) => {
+                let f = n.as_f64().unwrap();
+                Ok(Range(f, f))
             }
             Value::String(s) => {
                 let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/-)\s*(\d+\.*\d*)").unwrap();
@@ -105,8 +200,8 @@ impl Config {
                 let f1 = caps[1].parse::<f64>()?;
                 let f2 = caps[3].parse::<f64>()?;
                 match &caps[2] {
-                    ".." => Ok((f1, f2)),
-                    "+/-" => Ok((f1 - f2, f1 + f2)),
+                    ".." => Ok(Range(f1, f2)),
+                    "+/-" => Ok(Range(f1 - f2, f1 + f2)),
                     _ => Err(QedaError::InvalidElementType(
                         key.to_string(),
                         "range: f64..f64 or f64 +/- f64",
@@ -129,12 +224,15 @@ impl Config {
                         key.to_string(),
                         "range: [f64, f64]",
                     ))?;
-                Ok((f1, f2))
+                Ok(Range(f1, f2))
             }
             _ => Err(QedaError::InvalidElementType(key.to_string(), "range").into()),
         }
     }
 
+    /// Returns a `str` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_str(&self, key: &str) -> Result<&str> {
         Ok(self
             .get_element(key)?
@@ -142,6 +240,9 @@ impl Config {
             .ok_or(QedaError::InvalidElementType(key.to_string(), "string"))?)
     }
 
+    /// Returns a `String` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_string(&self, key: &str) -> Result<String> {
         Ok(self
             .get_element(key)?
@@ -150,19 +251,15 @@ impl Config {
             .to_string())
     }
 
+    /// Returns a `u64` config value.
+    ///
+    /// Returns an error if there is no parameter with the specified key.
     pub fn get_u64(&self, key: &str) -> Result<u64> {
         Ok(self
             .get_element(key)?
             .as_f64()
             .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?
             .round() as u64)
-    }
-
-    pub fn get_f64(&self, key: &str) -> Result<f64> {
-        Ok(self
-            .get_element(key)?
-            .as_f64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?)
     }
 
     pub fn insert_object(&mut self, key: &str, value: &str) -> Result<()> {
@@ -293,6 +390,9 @@ mod tests {
         assert!(config.get_element("A.B.C").is_ok());
         assert!(config.get_element("A.B.D").is_err());
         assert!(config.get_element("B").is_err());
+        assert_eq!(config.get_i64("A.B.C").unwrap(), 1);
+        assert_eq!(config.get_u64("A.B.C").unwrap(), 1);
+        assert_eq!(config.get_f64("A.B.C").unwrap(), 1.0);
     }
 
     #[test]
@@ -309,13 +409,35 @@ mod tests {
         ",
         )?;
 
-        assert_eq!(config.get_range("A")?, (1.0, 1.0));
-        assert_eq!(config.get_range("B")?, (1.3, 1.3));
-        assert_eq!(config.get_range("C")?, (1.0, 2.0));
-        assert_eq!(config.get_range("D")?, (5.0, 6.0));
-        assert_eq!(config.get_range("E")?, (3.9, 6.1));
-        assert_eq!(config.get_range("F")?, (1.0, 2.0));
-        assert_eq!(config.get_range("G")?, (2.25, 6.5));
+        assert_eq!(config.get_range("A")?, Range(1.0, 1.0));
+        assert_eq!(config.get_range("B")?, Range(1.3, 1.3));
+        assert_eq!(config.get_range("C")?, Range(1.0, 2.0));
+        assert_eq!(config.get_range("D")?, Range(5.0, 6.0));
+        assert_eq!(config.get_range("E")?, Range(3.9, 6.1));
+        assert_eq!(config.get_range("F")?, Range(1.0, 2.0));
+        assert_eq!(config.get_range("G")?, Range(2.25, 6.5));
+        Ok(())
+    }
+
+    #[test]
+    fn pair() -> Result<()> {
+        let config = Config::from_yaml(
+            r"
+        A: 1
+        B: 1.3
+        C: 1.0;2.0
+        D: 5 ; 6
+        E: [1, 2]
+        F: [2.25, 6.5]
+        ",
+        )?;
+
+        assert_eq!(config.get_pair("A")?, (1.0, 1.0));
+        assert_eq!(config.get_pair("B")?, (1.3, 1.3));
+        assert_eq!(config.get_pair("C")?, (1.0, 2.0));
+        assert_eq!(config.get_pair("D")?, (5.0, 6.0));
+        assert_eq!(config.get_pair("E")?, (1.0, 2.0));
+        assert_eq!(config.get_pair("F")?, (2.25, 6.5));
         Ok(())
     }
 

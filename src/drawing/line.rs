@@ -31,7 +31,7 @@ impl Line {
 
     /// Returns line length.
     pub fn len(&self) -> f64 {
-        Point::distance(&self.p.0, &self.p.1)
+        self.p.0.distance_to(&self.p.1)
     }
 
     /// Returns maximum x-coordinate.

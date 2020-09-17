@@ -24,7 +24,7 @@ impl TwoPin {
             .shape(PadShape::Rect)
             .size(self.pad_size.0, self.pad_size.1)
             .origin(-self.pad_distance / 2.0, 0.0)
-            .layers(Layer::COPPER_TOP);
+            .layers(Layer::COPPER_TOP | Layer::MASK_TOP | Layer::PASTE_TOP);
         let pad_right = pad_left
             .clone()
             .name("2")

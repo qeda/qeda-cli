@@ -38,8 +38,10 @@ impl Point {
         Point { x: x, y: y }
     }
 
-    pub fn distance(begin: &Point, end: &Point) -> f64 {
-        ((end.x - begin.x).powi(2) + (end.y - begin.y).powi(2)).sqrt()
+    pub fn distance_to(&self, p: &Point) -> f64 {
+        let dx = p.x - self.x;
+        let dy = p.y - self.y;
+        (dx * dx + dy * dy).sqrt()
     }
 }
 
@@ -96,6 +98,7 @@ impl Transformation {
         let m20 = n[6] * self.m[0] + n[7] * self.m[3] + n[8] * self.m[6];
         let m21 = n[6] * self.m[1] + n[7] * self.m[4] + n[8] * self.m[7];
         let m22 = n[6] * self.m[2] + n[7] * self.m[5] + n[8] * self.m[8];
+
         self.m = [m00, m01, m02, m10, m11, m12, m20, m21, m22];
         self.scale_x = (self.m[0] * self.m[0] + self.m[3] * self.m[3]).sqrt();
         self.scale_y = (self.m[1] * self.m[1] + self.m[4] * self.m[4]).sqrt();

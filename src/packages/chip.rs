@@ -2,7 +2,8 @@ use crate::config::Config;
 use crate::drawing::{Box3D, Drawing};
 use crate::error::*;
 
-use super::{calc::Ipc7351B, PackageHandler, TwoPin};
+use super::calc::{Ipc7351B, PackageType};
+use super::{PackageHandler, TwoPin};
 
 pub struct ChipPackage {}
 
@@ -31,14 +32,14 @@ impl PackageHandler for ChipPackage {
         };
         let lead_len = config.get_range("package.lead-length")?;
 
-        let ipc = Ipc7351B::default()
+        let ipc = Ipc7351B::new(PackageType::Chip)
             .lead_span(body_size_x)
             .lead_width(body_size_y)
-            .lead_height(body_size_z)
+            .lead_height(body_size_z) // TODO: Check whether we really need it
             .lead_len(lead_len)
-            .goals("chip", "N") // TODO: Replace density level by the config value
-            .tols(0.05, 0.025) // TODO: Replace fabrication and placement tolerances by the config values
-            .calc();
+            .settings(lib_config)
+            .calc()
+            .post_proc(config);
 
         let mut two_pin = TwoPin::default();
         two_pin.pad_size = ipc.pad_size;
