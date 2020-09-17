@@ -149,6 +149,14 @@ impl Drawing {
         self.elements.push(Element::Pad(pad)); // TODO: Consider transformation
     }
 
+    /// Adds pads to the drawing.
+    #[inline]
+    pub fn add_pads(&mut self, pads: Vec<Pad>) {
+        for pad in pads {
+            self.add_pad(pad);
+        }
+    }
+
     /// Finds a text attribute with the specified `id`.
     pub fn find_attribute(&self, id: &str) -> Option<&Attribute> {
         self.elements.iter().find_map(|e| match e {

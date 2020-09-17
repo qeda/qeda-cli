@@ -101,7 +101,7 @@ impl KicadFootprints {
                     Element::Pad(p) => {
                         writeln!(
                             f,
-                            "  (pad  {name} {kind} {shape} (at {x} {y}) (size {sx} {sy}) (layers {layers}))",
+                            "  (pad  {name} {kind} {shape} (at {x} {y}) (size {sx} {sy}) (layers {layers}) (solder_mask_margin {mask}))",
                             name = p.name,
                             kind = if p.is_smd() { "smd" } else { "thru_hole" },
                             shape = p.shape,
@@ -110,6 +110,7 @@ impl KicadFootprints {
                             sx = p.size.x,
                             sy = p.size.y,
                             layers = p.layers,
+                            mask = p.mask,
                         )?;
                     }
                     _ => (),

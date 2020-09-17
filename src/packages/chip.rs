@@ -1,9 +1,9 @@
 use crate::config::Config;
 use crate::drawing::{Box3D, Drawing};
 use crate::error::*;
+use crate::pattern::{Ipc7351B, TwoPin};
 
-use super::calc::{Ipc7351B, PackageType};
-use super::{PackageHandler, TwoPin};
+use super::{PackageHandler, PackageType};
 
 pub struct ChipPackage {}
 

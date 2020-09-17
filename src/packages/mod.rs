@@ -1,6 +1,4 @@
-mod calc;
 mod chip;
-mod two_pin;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
@@ -9,9 +7,19 @@ use crate::config::Config;
 use crate::drawing::Drawing;
 use crate::error::*;
 
-pub use two_pin::TwoPin;
-
 use chip::ChipPackage;
+
+#[derive(Debug)]
+pub enum PackageType {
+    Unknown,
+    Chip,
+}
+
+impl Default for PackageType {
+    fn default() -> Self {
+        PackageType::Unknown
+    }
+}
 
 pub trait PackageHandler {
     fn draw_pattern(&self, config: &Config, lib_config: &Config) -> Result<Drawing>;

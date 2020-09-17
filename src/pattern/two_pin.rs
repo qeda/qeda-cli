@@ -2,6 +2,8 @@ use crate::config::Config;
 use crate::drawing::*;
 use crate::error::*;
 
+use super::mask;
+
 #[derive(Debug, Default)]
 pub struct TwoPin {
     pub pad_size: (f64, f64),
@@ -30,10 +32,12 @@ impl TwoPin {
             .name("2")
             .origin(self.pad_distance / 2.0, 0.0);
 
+        let mut pads = vec![pad_left, pad_right];
+        mask::calc(&mut pads, lib_config);
+
         drawing.add_attribute(ref_des);
         drawing.add_attribute(value);
-        drawing.add_pad(pad_left);
-        drawing.add_pad(pad_right);
+        drawing.add_pads(pads);
         Ok(())
     }
 }

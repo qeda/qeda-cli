@@ -16,6 +16,7 @@ mod component;
 mod error;
 mod generators;
 mod packages;
+mod pattern;
 mod pinout;
 mod symbol;
 mod symbols;

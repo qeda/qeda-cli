@@ -1,16 +1,5 @@
 use crate::config::{Config, Range};
-
-#[derive(Debug)]
-pub enum PackageType {
-    Unknown,
-    Chip,
-}
-
-impl Default for PackageType {
-    fn default() -> Self {
-        PackageType::Unknown
-    }
-}
+use crate::packages::PackageType;
 
 #[derive(Debug, Default)]
 pub struct Ipc7351B {
@@ -142,7 +131,6 @@ impl Ipc7351B {
 
         self.pad_size = (pad_width, pad_height);
         self.pad_distance = pad_distance;
-
         self
     }
 
@@ -193,7 +181,7 @@ impl Ipc7351B {
         self.space_for_iron = config
             .get_f64("pattern.minimum.space-for-iron")
             .unwrap_or(0.0);
-        self.always_calc = config.get_bool("always-calculate").unwrap_or(false);
+        self.always_calc = config.get_bool("pattern.always-calculate").unwrap_or(false);
 
         self.density_level(config.get_str("pattern.density-level").unwrap_or("N"))
     }

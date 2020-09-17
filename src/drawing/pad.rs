@@ -21,6 +21,7 @@ pub struct Pad {
     pub shape: PadShape,
     pub hole: Option<Size>,
     pub layers: Layer,
+    pub mask: f64,
 }
 
 impl Pad {
