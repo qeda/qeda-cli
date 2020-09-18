@@ -291,7 +291,7 @@ impl Config {
         hex::encode(hasher.finish())
     }
 
-    pub fn merge(self, _from: &Config) -> Self {
+    pub fn merge(self, _with: &Config) -> Self {
         // TODO: Implement
         self
     }

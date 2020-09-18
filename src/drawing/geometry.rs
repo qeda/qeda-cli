@@ -19,6 +19,12 @@ pub struct Size {
     pub y: f64,
 }
 
+impl Size {
+    pub fn new(x: f64, y: f64) -> Self {
+        Size { x: x, y: y }
+    }
+}
+
 impl Transform for Size {
     fn transform(mut self, t: &Transformation) -> Self {
         self.x *= t.scale_x;

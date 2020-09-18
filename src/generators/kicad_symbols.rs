@@ -115,13 +115,13 @@ impl KicadSymbols {
         }
     }
 
-    pub fn render(&mut self, components: &Vec<Component>, config: &Config) -> Result<()> {
-        let unit = config.get_f64("generator.symbol.unit")?;
-        self.font_size_name = (unit * config.get_f64("symbol.font-size.name")?).round() as i64;
-        self.font_size_pin = (unit * config.get_f64("symbol.font-size.pin")?).round() as i64;
-        self.font_size_ref_des = (unit * config.get_f64("symbol.font-size.ref-des")?).round();
-        self.font_size_value = (unit * config.get_f64("symbol.font-size.value")?).round();
-        self.space_pin = (unit * config.get_f64("symbol.space.pin")?).round() as i64;
+    pub fn render(&mut self, components: &Vec<Component>, lib_cfg: &Config) -> Result<()> {
+        let unit = lib_cfg.get_f64("generator.symbol.unit")?;
+        self.font_size_name = (unit * lib_cfg.get_f64("symbol.font-size.name")?).round() as i64;
+        self.font_size_pin = (unit * lib_cfg.get_f64("symbol.font-size.pin")?).round() as i64;
+        self.font_size_ref_des = (unit * lib_cfg.get_f64("symbol.font-size.ref-des")?).round();
+        self.font_size_value = (unit * lib_cfg.get_f64("symbol.font-size.value")?).round();
+        self.space_pin = (unit * lib_cfg.get_f64("symbol.space.pin")?).round() as i64;
 
         let mut f = File::create(format!("{}.lib", self.name))?;
         writeln!(f, "EESchema-LIBRARY Version 2.4")?;

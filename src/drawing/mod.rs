@@ -5,6 +5,7 @@ mod box3d;
 mod geometry;
 mod line;
 mod pad;
+mod rect;
 mod svg;
 mod symbol_pin;
 
@@ -20,6 +21,7 @@ pub use box3d::Box3D;
 pub use geometry::*;
 pub use line::Line;
 pub use pad::*;
+pub use rect::Rect;
 pub use symbol_pin::SymbolPin;
 
 use svg::*;
@@ -141,6 +143,14 @@ impl Drawing {
     pub fn add_line(&mut self, line: Line) {
         self.elements
             .push(Element::Line(line.transform(&self.canvas_transform)));
+    }
+
+    /// Adds lines to the drawing.
+    #[inline]
+    pub fn add_lines(&mut self, lines: Vec<Line>) {
+        for line in lines {
+            self.add_line(line);
+        }
     }
 
     /// Adds a pad to the drawing.

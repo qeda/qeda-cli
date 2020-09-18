@@ -1,12 +1,11 @@
 use crate::config::{Config, Range};
+use crate::drawing::Size;
 use crate::packages::PackageType;
+
+use super::PadProperties;
 
 #[derive(Debug, Default)]
 pub struct Ipc7351B {
-    pub pad_distance: f64,
-    pub pad_size: (f64, f64),
-    pub courtyard: f64,
-
     package_type: PackageType,
     lead_span: Range,
     lead_len: Range,
@@ -18,13 +17,11 @@ pub struct Ipc7351B {
     toe: f64,
     heel: f64,
     side: f64,
+    courtyard: f64,
     fab_tol: f64,
     place_tol: f64,
 
     clearance: f64,
-    space_for_iron: f64,
-
-    always_calc: bool,
 }
 
 impl Ipc7351B {
@@ -61,7 +58,7 @@ impl Ipc7351B {
     }
 
     /// Calculates pad parameters.
-    pub fn calc(mut self) -> Self {
+    pub fn calc(self) -> PadProperties {
         let span_tol = self.lead_span.tol();
         let len_tol = self.lead_len.tol();
         let width_tol = self.lead_width.tol();
@@ -129,61 +126,26 @@ impl Ipc7351B {
             }
         }
 
-        self.pad_size = (pad_width, pad_height);
-        self.pad_distance = pad_distance;
-        self
-    }
-
-    /// Applies post processing according to the pattern config.
-    pub fn post_proc(mut self, config: &Config) -> Self {
-        if !self.always_calc {
-            if let Some(pad_width) = config.get_f64("pattern.pad-size-x").ok() {
-                self.pad_size.0 = pad_width;
-            }
-            if let Some(pad_height) = config.get_f64("pattern.pad-size-y").ok() {
-                self.pad_size.1 = pad_height;
-            }
-            if let Some(pad_size) = config.get_pair("pattern.pad-size").ok() {
-                self.pad_size = pad_size;
-            }
-            if let Some(pad_distance) = config.get_f64("pattern.pad-distance").ok() {
-                self.pad_distance = pad_distance;
-            }
-            if let Some(pad_span) = config.get_f64("pattern.pad-span").ok() {
-                self.pad_distance = pad_span - self.pad_size.0;
-            }
-            if let Some(pad_space) = config.get_f64("pattern.pad-space").ok() {
-                self.pad_distance = pad_space + self.pad_size.0;
-            }
+        PadProperties {
+            size: Size::new(pad_width, pad_height),
+            distance: pad_distance,
+            courtyard: self.courtyard,
+            lead_span: self.lead_span.nom(),
         }
-        if self.space_for_iron > 0.0 {
-            let lead_to_pad = (self.pad_distance + self.pad_size.0 - self.lead_span.nom()) / 2.0;
-            if lead_to_pad < self.space_for_iron {
-                let d = self.space_for_iron - lead_to_pad;
-                self.pad_size.0 += d;
-                self.pad_distance += d;
-            }
-        }
-        self
     }
 
     /// Gets settings from a config and applies them.
-    pub fn settings(mut self, config: &Config) -> Self {
-        self.fab_tol = config
+    pub fn settings(mut self, lib_cfg: &Config) -> Self {
+        self.fab_tol = lib_cfg
             .get_f64("pattern.tolerance.fabrication")
             .unwrap_or(0.05);
-        self.place_tol = config
+        self.place_tol = lib_cfg
             .get_f64("pattern.tolerance.placement")
             .unwrap_or(0.025);
-        self.clearance = config
+        self.clearance = lib_cfg
             .get_f64("pattern.clearance.pad-to-pad")
             .unwrap_or(0.0);
-        self.space_for_iron = config
-            .get_f64("pattern.minimum.space-for-iron")
-            .unwrap_or(0.0);
-        self.always_calc = config.get_bool("pattern.always-calculate").unwrap_or(false);
-
-        self.density_level(config.get_str("pattern.density-level").unwrap_or("N"))
+        self.density_level(lib_cfg.get_str("pattern.density-level").unwrap_or("N"))
     }
 }
 
@@ -288,14 +250,16 @@ mod tests {
     #[test]
     fn ipc() {
         // Use calculator from pcblibraries.com for validation
-        let ipc = Ipc7351B::new(PackageType::Unknown)
+        let pad_props = Ipc7351B::new(PackageType::Unknown)
             .lead_span(Range(5.85, 6.2))
             .lead_width(Range(0.31, 0.51))
             .lead_len(Range(0.4, 1.27))
             .settings(&Config::new())
             .calc();
 
-        assert_eq!(ipc.pad_distance, 4.96);
-        assert_eq!(ipc.pad_size, (1.95, 0.6));
+        assert_eq!(pad_props.distance, 4.96);
+        assert_eq!(pad_props.size.x, 1.95);
+        assert_eq!(pad_props.size.y, 0.6);
+        assert_eq!(pad_props.courtyard, 0.25);
     }
 }

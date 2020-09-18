@@ -14,15 +14,17 @@ impl ChipPackage {
 }
 
 impl PackageHandler for ChipPackage {
-    fn draw_pattern(&self, config: &Config, lib_config: &Config) -> Result<Drawing> {
+    fn draw_pattern(&self, comp_cfg: &Config, lib_cfg: &Config) -> Result<Drawing> {
         debug!("draw chip pattern");
 
-        let body_size_x = config.get_range("package.body-size-x")?;
-        let body_size_y = config.get_range("package.body-size-y")?;
-        let body_size_z = if let Some(z) = config.get_range("package.body-size-z").ok() {
+        let body_size_x = comp_cfg.get_range("package.body-size-x")?;
+        let body_size_y = comp_cfg.get_range("package.body-size-y")?;
+        let body_width = body_size_x.nom();
+        let body_height = body_size_y.nom();
+        let body_size_z = if let Some(z) = comp_cfg.get_range("package.body-size-z").ok() {
             z
         } else {
-            if let Some(z) = config.get_range("package.size-z").ok() {
+            if let Some(z) = comp_cfg.get_range("package.size-z").ok() {
                 z
             } else {
                 bail!(QedaError::MissingDimension(
@@ -30,28 +32,27 @@ impl PackageHandler for ChipPackage {
                 ));
             }
         };
-        let lead_len = config.get_range("package.lead-length")?;
+        let lead_len = comp_cfg.get_range("package.lead-length")?;
 
-        let ipc = Ipc7351B::new(PackageType::Chip)
+        let pad_props = Ipc7351B::new(PackageType::Chip)
             .lead_span(body_size_x)
             .lead_width(body_size_y)
             .lead_height(body_size_z) // TODO: Check whether we really need it
             .lead_len(lead_len)
-            .settings(lib_config)
+            .settings(lib_cfg)
             .calc()
-            .post_proc(config);
+            .post_proc(comp_cfg, lib_cfg);
 
-        let mut two_pin = TwoPin::default();
-        two_pin.pad_size = ipc.pad_size;
-        two_pin.pad_distance = ipc.pad_distance;
-        two_pin.courtyard = ipc.courtyard;
+        let two_pin = TwoPin::default()
+            .pad_properties(pad_props)
+            .body(body_width, body_height);
 
         let mut drawing = Drawing::new();
-        two_pin.draw(&mut drawing, lib_config)?;
+        two_pin.draw(&mut drawing, lib_cfg)?;
         Ok(drawing)
     }
 
-    fn draw_model(&self, _config: &Config, _lib_config: &Config) -> Result<Drawing> {
+    fn draw_model(&self, _comp_cfg: &Config, _lib_cfg: &Config) -> Result<Drawing> {
         debug!("draw chip model");
         let mut drawing = Drawing::new();
         drawing.add_box3d(Box3D::new().origin(0.0, 1.0, 2.0).dimensions(3.0, 4.0, 5.0));

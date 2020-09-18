@@ -15,10 +15,10 @@ impl CapacitorSymbol {
 }
 
 impl SymbolHandler for CapacitorSymbol {
-    fn draw(&self, config: &Config, _lib: &Config) -> Result<Symbol> {
+    fn draw(&self, comp_cfg: &Config, _lib_cfg: &Config) -> Result<Symbol> {
         debug!("draw capacitor symbol");
 
-        let mut pinout = Pinout::from_config(config)?;
+        let mut pinout = Pinout::from_config(comp_cfg)?;
         if !pinout.groups.contains_key("L") {
             pinout.add_pin(Pin::new("L", "1").kind(PinKind::PASSIVE));
         }

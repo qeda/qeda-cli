@@ -10,7 +10,7 @@ use crate::symbol::Symbol;
 use capacitor::CapacitorSymbol;
 
 pub trait SymbolHandler {
-    fn draw(&self, config: &Config, lib_config: &Config) -> Result<Symbol>;
+    fn draw(&self, comp_cfg: &Config, lib_cfg: &Config) -> Result<Symbol>;
 }
 
 impl Debug for dyn SymbolHandler {

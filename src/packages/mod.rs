@@ -22,8 +22,8 @@ impl Default for PackageType {
 }
 
 pub trait PackageHandler {
-    fn draw_pattern(&self, config: &Config, lib_config: &Config) -> Result<Drawing>;
-    fn draw_model(&self, config: &Config, lib_config: &Config) -> Result<Drawing>;
+    fn draw_pattern(&self, comp_cfg: &Config, lib_cfg: &Config) -> Result<Drawing>;
+    fn draw_model(&self, comp_cfg: &Config, lib_cfg: &Config) -> Result<Drawing>;
 }
 
 impl Debug for dyn PackageHandler {

@@ -68,7 +68,7 @@ impl fmt::Display for Layer {
 }
 
 impl KicadFootprints {
-    pub fn render(&mut self, components: &Vec<Component>, _config: &Config) -> Result<()> {
+    pub fn render(&mut self, components: &Vec<Component>, _lib_cfg: &Config) -> Result<()> {
         for component in components {
             let name = &component.name;
             let pattern = &component.pattern;
@@ -98,10 +98,22 @@ impl KicadFootprints {
                         )?;
                         writeln!(f, "  )")?;
                     }
+                    Element::Line(l) => {
+                        writeln!(
+                            f,
+                            "  (fp_line (start {x0} {y0}) (end {x1} {y1}) (layer {layer}) (width {width}))",
+                            x0 = l.p.0.x,
+                            y0 = l.p.0.y,
+                            x1 = l.p.1.x,
+                            y1 = l.p.1.y,
+                            layer = l.layer,
+                            width = l.width,
+                        )?;
+                    }
                     Element::Pad(p) => {
                         writeln!(
                             f,
-                            "  (pad  {name} {kind} {shape} (at {x} {y}) (size {sx} {sy}) (layers {layers}) (solder_mask_margin {mask}))",
+                            "  (pad {name} {kind} {shape} (at {x} {y}) (size {sx} {sy}) (layers {layers}) (solder_mask_margin {mask}))",
                             name = p.name,
                             kind = if p.is_smd() { "smd" } else { "thru_hole" },
                             shape = p.shape,

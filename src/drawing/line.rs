@@ -8,7 +8,7 @@ pub struct Line {
 }
 
 impl Line {
-    /// Creates a new line.
+    /// Creates a new `Line`.
     pub fn new(x0: f64, y0: f64, x1: f64, y1: f64) -> Self {
         Line {
             p: (Point { x: x0, y: y0 }, Point { x: x1, y: y1 }),
