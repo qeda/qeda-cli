@@ -23,6 +23,6 @@ mod symbols;
 
 pub use error::Result;
 
-pub fn run_cli() -> Result<()> {
-    cli::run()
+pub async fn run_cli() -> Result<()> {
+    cli::run().await
 }

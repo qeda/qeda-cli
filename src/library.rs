@@ -10,19 +10,19 @@ use crate::generators::Generators;
 use crate::packages::Packages;
 use crate::symbols::Symbols;
 
-const ID_SEPARATOR: &str = "/";
+const ID_SEPARATOR: char = '/';
 const QEDALIB_DIR: &str = "qedalib";
 const YAML_SUFFIX: &str = ".yml";
 
 #[derive(Debug)]
-pub struct Library<'a> {
+pub struct Library {
     pub components: Vec<Component>,
     pub config: Config,
-    pub symbols: Symbols<'a>,
-    pub packages: Packages<'a>,
+    pub symbols: Symbols,
+    pub packages: Packages,
 }
 
-impl<'a> Library<'a> {
+impl Library {
     /// Creates an empty component library.
     ///
     /// # Examples
@@ -54,16 +54,17 @@ impl<'a> Library<'a> {
     ///   capacitor/c0603: {}
     /// ";
     /// let config = Config::from_yaml(yaml).unwrap();
-    /// let lib = Library::from_config(&config).unwrap();
+    /// let mut rt = tokio::runtime::Runtime::new().unwrap();
+    /// let lib = rt.block_on(Library::from_config(&config)).unwrap();
     ///
     /// assert_eq!(lib.components.len(), 1);
     /// ```
-    pub fn from_config(config: &Config) -> Result<Self> {
+    pub async fn from_config(config: &Config) -> Result<Self> {
         let mut lib = Library::new().merge_config(config);
         let components_hash = config.get_object("components")?;
         let keys = components_hash.keys();
         for key in keys {
-            lib.add_component(key.as_str())?;
+            lib.add_component(key.as_str()).await?; // TODO: Replace awaiting in loop by `join_all` of `JoinHandle`s
         }
         Ok(lib)
     }
@@ -76,17 +77,18 @@ impl<'a> Library<'a> {
     /// use qeda::library::Library;
     ///
     /// let mut lib = Library::new();
-    /// lib.add_component("capacitor/c0603").unwrap();
+    /// let mut rt = tokio::runtime::Runtime::new().unwrap();
+    /// rt.block_on(lib.add_component("capacitor/c0603")).unwrap();
     ///
     /// assert_eq!(lib.components.len(), 1);
     /// ```
-    pub fn add_component(&mut self, id: &str) -> Result<()> {
+    pub async fn add_component(&mut self, id: &str) -> Result<()> {
         let id = id.to_lowercase();
 
         info!("adding component '{}'", id);
         let component_path = self.local_path(&id);
         let component = if !Path::new(&component_path).exists() {
-            self.load_component(&id)?
+            self.load_component(&id).await?
         } else {
             let component_yaml = fs::read_to_string(component_path)?;
             self.parse_component(&id, &component_yaml)?
@@ -103,14 +105,15 @@ impl<'a> Library<'a> {
     /// use qeda::library::Library;
     ///
     /// let lib = Library::new();
-    /// lib.load_component("capacitor/c0603").unwrap();
+    /// let mut rt = tokio::runtime::Runtime::new().unwrap();
+    /// rt.block_on(lib.load_component("capacitor/c0603")).unwrap();
     /// ```
-    pub fn load_component(&self, id: &str) -> Result<Component> {
+    pub async fn load_component(&self, id: &str) -> Result<Component> {
         let id = id.to_lowercase();
 
         info!("loading component '{}'", id);
         let mut url = self.config.get_string("base-url")?;
-        if !url.ends_with("/") {
+        if !url.ends_with('/') {
             url += "/";
         }
 
@@ -121,6 +124,7 @@ impl<'a> Library<'a> {
         debug!("URL: {}", url);
         let component_yaml = self
             .get_url_contents(&url)
+            .await
             .with_context(|| "component loading failed")?;
         let component = self.parse_component(&id, &component_yaml)?;
 
@@ -137,29 +141,29 @@ impl<'a> Library<'a> {
     ///
     /// Consumes the `Library` by moving to renderer.
     pub fn generate(self, name: &str) -> Result<()> {
-        let generator_type = self.config.get_string("generator.type")?;
+        let generator_type = self.config.get_string("generator.type").unwrap();
         let generators = Generators::new();
         generators.get(&generator_type)?.render(name, self)?;
         Ok(())
     }
-}
 
-// Private methods
-impl<'a> Library<'a> {
-    fn get_url_contents(&self, url: &str) -> Result<String> {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(self.config.get_u64("timeout")?))
+    // Get contents of page specified by URL
+    async fn get_url_contents(&self, url: &str) -> Result<String> {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(self.config.get_u64("timeout").unwrap()))
             .build()?;
 
-        let response = client.get(url).send()?.error_for_status()?;
-        Ok(response.text()?)
+        let response = client.get(url).send().await?.error_for_status()?;
+        Ok(response.text().await?)
     }
 
+    // Get file path from specified component ID
     fn file_path(&self, id: &str) -> String {
         let path_elems: Vec<&str> = id.split(ID_SEPARATOR).collect();
         path_elems.join("/") + YAML_SUFFIX
     }
 
+    // Get local directory path from specified component ID
     fn local_dir(&self, id: &str) -> String {
         let path_elems: Vec<&str> = id.split(ID_SEPARATOR).collect();
         let last_but_one = path_elems.len() - 1;
@@ -171,10 +175,12 @@ impl<'a> Library<'a> {
         }
     }
 
+    // Get local path from specified component ID
     fn local_path(&self, id: &str) -> String {
         QEDALIB_DIR.to_string() + "/" + &self.file_path(&id)
     }
 
+    // Get manufacturer from specified component ID
     fn manufacturer(&self, id: &str) -> Option<String> {
         let path_elems: Vec<&str> = id.split(ID_SEPARATOR).collect();
         if path_elems.len() > 1 {
@@ -184,16 +190,26 @@ impl<'a> Library<'a> {
         }
     }
 
+    // Merge the own config with the specified one
     fn merge_config(mut self, config: &Config) -> Self {
         self.config = self.config.merge(config);
         self
     }
 
+    // Parse component's YAML description
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
         let config = Config::from_yaml(yaml)?;
         let component = Component::from_config(&config, &self)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)
+    }
+}
+
+impl Default for Library {
+    /// Creates an empty `Library`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }

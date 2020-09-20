@@ -94,6 +94,7 @@ impl fmt::Display for PinDirection {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct KicadSymbols {
     name: String,
     font_size_name: i64,
@@ -107,22 +108,12 @@ impl KicadSymbols {
     pub fn new(name: &str) -> Self {
         KicadSymbols {
             name: name.to_string(),
-            font_size_name: 0,
-            font_size_pin: 0,
-            font_size_ref_des: 0.0,
-            font_size_value: 0.0,
-            space_pin: 0,
+            ..Self::default()
         }
     }
 
-    pub fn render(&mut self, components: &Vec<Component>, lib_cfg: &Config) -> Result<()> {
-        let unit = lib_cfg.get_f64("generator.symbol.unit")?;
-        self.font_size_name = (unit * lib_cfg.get_f64("symbol.font-size.name")?).round() as i64;
-        self.font_size_pin = (unit * lib_cfg.get_f64("symbol.font-size.pin")?).round() as i64;
-        self.font_size_ref_des = (unit * lib_cfg.get_f64("symbol.font-size.ref-des")?).round();
-        self.font_size_value = (unit * lib_cfg.get_f64("symbol.font-size.value")?).round();
-        self.space_pin = (unit * lib_cfg.get_f64("symbol.space.pin")?).round() as i64;
-
+    /// Renders symbols to a KiCad symbol library.
+    pub fn render(self, components: &[Component]) -> Result<()> {
         let mut f = File::create(format!("{}.lib", self.name))?;
         writeln!(f, "EESchema-LIBRARY Version 2.4")?;
         writeln!(f, "#encoding utf-8")?;
@@ -131,10 +122,10 @@ impl KicadSymbols {
             let name = &component.name;
             let symbol = &component.symbol;
             ensure!(
-                symbol.parts.len() > 0,
+                !symbol.parts.is_empty(),
                 QedaError::InvalidSymbolNoParts(name.to_string())
             );
-            info!("  • {}", name);
+            info!("  • symbol: '{}'", name);
 
             // Header
             writeln!(f, "{}", self.header(name, symbol))?;
@@ -169,10 +160,24 @@ impl KicadSymbols {
         writeln!(f, "#\n#End Library")?;
         Ok(())
     }
-}
 
-// Private methods
-impl KicadSymbols {
+    /// Builds an `KicadSymbols` with applied settings from `Config`.
+    pub fn settings(mut self, lib_cfg: &Config) -> Self {
+        let unit = lib_cfg.get_f64("generator.symbol.unit").unwrap();
+
+        self.font_size_name =
+            (unit * lib_cfg.get_f64("symbol.font-size.name").unwrap()).round() as i64;
+        self.font_size_pin =
+            (unit * lib_cfg.get_f64("symbol.font-size.pin").unwrap()).round() as i64;
+        self.font_size_ref_des =
+            (unit * lib_cfg.get_f64("symbol.font-size.ref-des").unwrap()).round();
+        self.font_size_value = (unit * lib_cfg.get_f64("symbol.font-size.value").unwrap()).round();
+        self.space_pin = (unit * lib_cfg.get_f64("symbol.space.pin").unwrap()).round() as i64;
+
+        self
+    }
+
+    // Render element to a library file record
     fn element(&self, number: usize, element: &Element) -> Option<String> {
         match element {
             Element::Line(l) => Some(format!(
@@ -193,7 +198,7 @@ impl KicadSymbols {
                 number = sym_pin.pin.number,
                 posx = sym_pin.origin.x.round(),
                 posy = sym_pin.origin.y.round(),
-                length = sym_pin.len.round(),
+                length = sym_pin.length.round(),
                 orientation = sym_pin.direction,
                 snum = self.font_size_pin,  // pin number text size
                 snom = self.font_size_name, // pin name text size
@@ -210,6 +215,7 @@ impl KicadSymbols {
         }
     }
 
+    // Render field to a library file record
     fn field(&self, number: i64, attr: &Attribute) -> String {
         format!(
             "F{number} \"{text}\" {x} {y} {dimension} {orientation} {visibility} {hjustify} {vjustify}NN",
@@ -225,6 +231,7 @@ impl KicadSymbols {
         )
     }
 
+    // Render a library file header
     fn header(&self, name: &str, symbol: &Symbol) -> String {
         format!(
             "#\n# {name}\n#\n\

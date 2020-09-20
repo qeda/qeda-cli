@@ -21,16 +21,14 @@ impl PackageHandler for ChipPackage {
         let body_size_y = comp_cfg.get_range("package.body-size-y")?;
         let body_width = body_size_x.nom();
         let body_height = body_size_y.nom();
-        let body_size_z = if let Some(z) = comp_cfg.get_range("package.body-size-z").ok() {
+        let body_size_z = if let Ok(z) = comp_cfg.get_range("package.body-size-z") {
+            z
+        } else if let Ok(z) = comp_cfg.get_range("package.size-z") {
             z
         } else {
-            if let Some(z) = comp_cfg.get_range("package.size-z").ok() {
-                z
-            } else {
-                bail!(QedaError::MissingDimension(
-                    "'package' should have either 'body_size_z' or 'size_z'"
-                ));
-            }
+            bail!(QedaError::MissingDimension(
+                "'package' should have either 'body_size_z' or 'size_z'"
+            ));
         };
         let lead_len = comp_cfg.get_range("package.lead-length")?;
 
@@ -48,7 +46,7 @@ impl PackageHandler for ChipPackage {
             .body(body_width, body_height);
 
         let mut drawing = Drawing::new();
-        two_pin.draw(&mut drawing, lib_cfg)?;
+        two_pin.draw(&mut drawing, lib_cfg);
         Ok(drawing)
     }
 

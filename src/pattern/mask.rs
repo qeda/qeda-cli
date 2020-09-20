@@ -1,13 +1,11 @@
 use crate::config::Config;
 use crate::drawing::Pad;
 
-pub fn calc(pads: &mut Vec<Pad>, config: &Config) {
-    let mask_width = config.get_f64("pattern.minimum.mask-width").unwrap_or(0.0);
-    let mask = config
-        .get_f64("pattern.clearance.pad-to-mask")
-        .unwrap_or(0.0);
-    for i in 0..pads.len() {
-        pads[i].mask = mask;
+pub fn calc(pads: &mut [Pad], config: &Config) {
+    let mask_width = config.get_f64("pattern.minimum.mask-width").unwrap();
+    let mask = config.get_f64("pattern.clearance.pad-to-mask").unwrap();
+    for pad in pads.iter_mut() {
+        pad.mask = mask;
     }
     if pads.len() < 2 {
         return;

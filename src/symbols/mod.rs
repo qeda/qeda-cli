@@ -20,21 +20,31 @@ impl Debug for dyn SymbolHandler {
 }
 
 #[derive(Debug)]
-pub struct Symbols<'a> {
-    handlers: HashMap<&'a str, Box<dyn SymbolHandler>>,
+pub struct Symbols {
+    handlers: HashMap<&'static str, Box<dyn SymbolHandler>>,
 }
 
-impl<'a> Symbols<'a> {
-    pub fn new() -> Symbols<'a> {
-        let mut handlers: HashMap<&'a str, Box<dyn SymbolHandler>> = HashMap::new();
+impl Symbols {
+    /// Creates an empty `Symbols`.
+    pub fn new() -> Symbols {
+        let mut handlers: HashMap<&'static str, Box<dyn SymbolHandler>> = HashMap::new();
         handlers.insert("capacitor", Box::new(CapacitorSymbol::new()));
 
         Symbols { handlers }
     }
 
-    pub fn get_handler(&self, key: &str) -> Result<&Box<dyn SymbolHandler>> {
+    pub fn get_handler(&self, key: &str) -> Result<&dyn SymbolHandler> {
         self.handlers
             .get(key)
-            .ok_or(QedaError::InvalidSymbolType(key.to_string()).into())
+            .map(|v| v.as_ref())
+            .ok_or_else(|| QedaError::InvalidSymbolType(key.to_string()).into())
+    }
+}
+
+impl Default for Symbols {
+    /// Creates an empty `Symbols`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }

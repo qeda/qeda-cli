@@ -100,7 +100,7 @@ impl Pinout {
         Pinout {
             pins: Vec::new(),
             groups: LinkedHashMap::new(),
-            letters: letters,
+            letters,
         }
     }
 
@@ -128,19 +128,16 @@ impl Pinout {
                         result.add_pins(k, v)?;
                     }
                 }
-                _ => (), // TODO: Return the error about unexpected type
+                Value::String(_) => (), // TODO: Parse range `1..20`
+                Value::Array(_) => (),  // TODO: Parse range `[1, 20]`
+                _ => (),                // TODO: Return the error about unexpected type
             }
         }
-        if let Ok(props_yaml) = config.get_element("pin-properties") {
-            match props_yaml {
-                Value::Object(o) => {
-                    for (key, value) in o {
-                        dbg!(key);
-                        dbg!(value);
-                        // TODO: Process pin properties
-                    }
-                }
-                _ => (), // TODO: Return the error about unexpected type
+        if let Ok(Value::Object(o)) = config.get_element("pin-properties") {
+            for (key, value) in o {
+                dbg!(key);
+                dbg!(value);
+                // TODO: Process pin properties
             }
         }
         Ok(result)
@@ -155,10 +152,9 @@ impl Pinout {
             None
         }
     }
-}
 
-impl Pinout {
-    fn add_pins(&mut self, name: &String, value: &Value) -> Result<Vec<usize>> {
+    // Add pins from `Config`'s value
+    fn add_pins(&mut self, name: &str, value: &Value) -> Result<Vec<usize>> {
         let mut result = Vec::new();
         match value {
             Value::Object(o) => {
@@ -166,7 +162,7 @@ impl Pinout {
                     result.append(&mut self.add_pins(k, v)?);
                 }
                 if !self.groups.contains_key(name) {
-                    self.groups.insert(name.clone(), Vec::new());
+                    self.groups.insert(name.to_string(), Vec::new());
                 }
                 let group = self.groups.get_mut(name).unwrap();
                 group.append(&mut result); // TODO: Consider `result.clone()` if the result will be used somewhere
@@ -174,22 +170,23 @@ impl Pinout {
             Value::Number(_) | Value::String(_) | Value::Array(_) => {
                 let names = self.parse_name(name)?;
                 let numbers = self.parse_number(value)?;
-                if names.len() > 1 {
+                if names.len() > 1 && names.len() == numbers.len() {
                     // Multiple names to multiple numbers
-                    ensure!(
-                        names.len() == numbers.len(),
-                        QedaError::InvalidPinCount(names.join(", "), numbers.join(", "))
-                    );
                     for i in 0..names.len() {
                         let pin = Pin::new(&names[i], &numbers[i]);
                         result.append(&mut self.add_pin(pin));
                     }
                 } else if names.len() == 1 {
                     // Single name to multiple numbers
-                    for i in 0..numbers.len() {
-                        let pin = Pin::new(&names[0], &numbers[i]);
+                    for number in &numbers {
+                        let pin = Pin::new(&names[0], number);
                         result.append(&mut self.add_pin(pin));
                     }
+                } else {
+                    bail!(QedaError::InvalidPinCount(
+                        names.join(", "),
+                        numbers.join(", ")
+                    ));
                 }
             }
             _ => (), // TODO: Return the error about unexpected type
@@ -197,36 +194,38 @@ impl Pinout {
         Ok(result)
     }
 
-    fn parse_name(&self, name: &String) -> Result<Vec<String>> {
+    // Parse pin name(s) from string
+    fn parse_name(&self, name: &str) -> Result<Vec<String>> {
         let mut result = Vec::new();
 
         let re = Regex::new(r"(\D*)(\d+)\s*\.\.\s*(\D*)(\d+)").unwrap();
         if re.is_match(name) {
             let caps = re
                 .captures(name)
-                .ok_or(QedaError::InvalidPinName(name.clone()))?;
+                .ok_or_else(|| QedaError::InvalidPinName(name.to_string()))?;
             ensure!(
                 caps[1].eq(&caps[3]),
                 QedaError::InvalidPinRangeNameBase(
-                    name.clone(),
+                    name.to_string(),
                     caps[1].to_string(),
                     caps[3].to_string()
                 )
             );
             let begin = caps[2].parse::<usize>()?;
             let end = caps[4].parse::<usize>()?;
-            ensure!(begin < end, QedaError::InvalidPinName(name.clone()));
+            ensure!(begin < end, QedaError::InvalidPinName(name.to_string()));
             for i in begin..=end {
-                ensure!(begin < end, QedaError::InvalidPinName(name.clone()));
+                ensure!(begin < end, QedaError::InvalidPinName(name.to_string()));
                 result.push(format!("{}{}", &caps[1], i));
             }
         } else {
-            result.push(name.clone());
+            result.push(name.to_string());
         }
 
         Ok(result)
     }
 
+    // Parse pin number(s) from string
     fn parse_number(&self, number: &Value) -> Result<Vec<String>> {
         let mut result = Vec::new();
         match number {
@@ -239,17 +238,17 @@ impl Pinout {
                 if re.is_match(&s) {
                     let caps = re
                         .captures(&s)
-                        .ok_or(QedaError::InvalidPinNumber(s.to_string()))?;
+                        .ok_or_else(|| QedaError::InvalidPinNumber(s.to_string()))?;
                     let row_begin = self
                         .letters
                         .iter()
                         .position(|s| s.eq(&caps[1]))
-                        .ok_or(QedaError::InvalidPinNumber(s.to_string()))?;
+                        .ok_or_else(|| QedaError::InvalidPinNumber(s.to_string()))?;
                     let mut row_end = self
                         .letters
                         .iter()
                         .position(|s| s.eq(&caps[3]))
-                        .ok_or(QedaError::InvalidPinNumber(s.to_string()))?;
+                        .ok_or_else(|| QedaError::InvalidPinNumber(s.to_string()))?;
                     if row_end < row_begin {
                         row_end = row_begin;
                     }
@@ -265,7 +264,7 @@ impl Pinout {
                         }
                     }
                 } else {
-                    result.push(s.to_string());
+                    result.push(s);
                 }
             }
             Value::Array(a) => {
@@ -277,6 +276,14 @@ impl Pinout {
             _ => (), // TODO: Return the error about unexpected type
         }
         Ok(result)
+    }
+}
+
+impl Default for Pinout {
+    #[inline]
+    /// Creates an empty `Pinout`.
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -317,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pinout_group() -> Result<()> {
+    fn group() -> Result<()> {
         let pinout_yaml = r"
         pinout:
           GROUP:

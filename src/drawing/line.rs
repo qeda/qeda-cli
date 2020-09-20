@@ -12,25 +12,27 @@ impl Line {
     pub fn new(x0: f64, y0: f64, x1: f64, y1: f64) -> Self {
         Line {
             p: (Point { x: x0, y: y0 }, Point { x: x1, y: y1 }),
-            width: 0.0,
-            layer: Layer::NONE,
+            ..Self::default()
         }
     }
 
-    /// Changes the layer.
+    /// Builds an `Line` with modified layer.
+    #[inline]
     pub fn layer(mut self, layer: Layer) -> Self {
         self.layer = layer;
         self
     }
 
-    /// Changes line width.
+    /// Builds an `Line` with modified line width.
+    #[inline]
     pub fn width(mut self, width: f64) -> Self {
         self.width = width;
         self
     }
 
     /// Returns line length.
-    pub fn len(&self) -> f64 {
+    #[inline]
+    pub fn length(&self) -> f64 {
         self.p.0.distance_to(&self.p.1)
     }
 

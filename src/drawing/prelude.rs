@@ -1,3 +1,7 @@
+pub use std::str::FromStr;
+
+use crate::error::Result;
+
 #[derive(Clone, Debug)]
 pub enum HAlign {
     Left,
@@ -5,20 +9,22 @@ pub enum HAlign {
     Right,
 }
 
-impl HAlign {
-    pub fn from_str(s: &str) -> Self {
-        match s {
+impl Default for HAlign {
+    #[inline]
+    fn default() -> Self {
+        Self::Left
+    }
+}
+
+impl FromStr for HAlign {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
             "left" => HAlign::Left,
             "right" => HAlign::Right,
             "center" => HAlign::Center,
             _ => HAlign::default(),
-        }
-    }
-}
-
-impl Default for HAlign {
-    fn default() -> Self {
-        Self::Left
+        })
     }
 }
 
@@ -29,20 +35,22 @@ pub enum VAlign {
     Bottom,
 }
 
-impl VAlign {
-    pub fn from_str(s: &str) -> Self {
-        match s {
+impl Default for VAlign {
+    #[inline]
+    fn default() -> Self {
+        Self::Bottom
+    }
+}
+
+impl FromStr for VAlign {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
             "bottom" => VAlign::Bottom,
             "top" => VAlign::Top,
             "middle" => VAlign::Middle,
             _ => VAlign::default(),
-        }
-    }
-}
-
-impl Default for VAlign {
-    fn default() -> Self {
-        Self::Bottom
+        })
     }
 }
 
@@ -53,13 +61,21 @@ pub enum Orientation {
 }
 
 impl Default for Orientation {
+    #[inline]
     fn default() -> Self {
         Orientation::Horizontal
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Visibility(pub bool);
+
+impl Default for Visibility {
+    #[inline]
+    fn default() -> Self {
+        Visibility(true)
+    }
+}
 
 #[derive(Debug)]
 pub enum PinDirection {

@@ -3,7 +3,6 @@ use std::io::Write;
 use std::path::Path;
 
 use crypto_hash::{Algorithm, Hasher};
-use hex;
 use regex::Regex;
 use serde_json::{Map, Number, Value};
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
@@ -68,12 +67,12 @@ impl Config {
     /// Creates a new `Config` from YAML string.
     pub fn from_yaml(yaml: &str) -> Result<Config> {
         let mut docs = YamlLoader::load_from_str(yaml)?;
-        ensure!(docs.len() > 0, QedaError::InvalidConfig);
+        ensure!(!docs.is_empty(), QedaError::InvalidConfig);
         let mut json = Self::yaml_to_json(docs.pop().unwrap())?;
         if json == Value::Null {
             json = Value::Object(Map::new());
         }
-        Ok(Config { json: json })
+        Ok(Config { json })
     }
 
     /// Creates a new file if it doesn't exist.
@@ -91,12 +90,12 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_bool()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "bool"))?)
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "bool"))?)
     }
 
     /// Returns a config element.
     pub fn get_element(&self, key: &str) -> Result<&Value> {
-        let keys: Vec<&str> = key.split(".").collect();
+        let keys: Vec<&str> = key.split('.').collect();
         let mut element = &self.json[keys[0]];
         for key in &keys[1..] {
             element = &element[*key];
@@ -115,7 +114,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_f64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?)
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "number"))?)
     }
 
     /// Returns a `i64` config value.
@@ -125,7 +124,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_f64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "number"))?
             .round() as i64)
     }
 
@@ -136,7 +135,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_object()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "object"))?)
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "object"))?)
     }
 
     /// Returns a pair config value.
@@ -151,10 +150,9 @@ impl Config {
             }
             Value::String(s) => {
                 let re = Regex::new(r"(\d+\.*\d*)\s*;\s*(\d+\.*\d*)").unwrap();
-                let caps = re.captures(s).ok_or(QedaError::InvalidElementType(
-                    key.to_string(),
-                    "pair: f64;f64",
-                ))?;
+                let caps = re.captures(s).ok_or_else(|| {
+                    QedaError::InvalidElementType(key.to_string(), "pair: f64;f64")
+                })?;
                 let f1 = caps[1].parse::<f64>()?;
                 let f2 = caps[2].parse::<f64>()?;
                 Ok((f1, f2))
@@ -162,18 +160,16 @@ impl Config {
             Value::Array(a) if a.len() == 2 => {
                 let f1 = a[0]
                     .as_f64()
-                    .or(a[0].as_i64().and_then(|v| Some(v as f64)))
-                    .ok_or(QedaError::InvalidElementType(
-                        key.to_string(),
-                        "range: [f64, f64]",
-                    ))?;
+                    .or_else(|| a[0].as_i64().map(|v| v as f64))
+                    .ok_or_else(|| {
+                        QedaError::InvalidElementType(key.to_string(), "pair: [f64, f64]")
+                    })?;
                 let f2 = a[1]
                     .as_f64()
-                    .or(a[1].as_i64().and_then(|v| Some(v as f64)))
-                    .ok_or(QedaError::InvalidElementType(
-                        key.to_string(),
-                        "range: [f64, f64]",
-                    ))?;
+                    .or_else(|| a[1].as_i64().map(|v| v as f64))
+                    .ok_or_else(|| {
+                        QedaError::InvalidElementType(key.to_string(), "pair: [f64, f64]")
+                    })?;
                 Ok((f1, f2))
             }
             _ => Err(QedaError::InvalidElementType(key.to_string(), "pair").into()),
@@ -193,10 +189,9 @@ impl Config {
             }
             Value::String(s) => {
                 let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/-)\s*(\d+\.*\d*)").unwrap();
-                let caps = re.captures(s).ok_or(QedaError::InvalidElementType(
-                    key.to_string(),
-                    "range: f64..f64 or f64 +/- f64",
-                ))?;
+                let caps = re.captures(s).ok_or_else(|| {
+                    QedaError::InvalidElementType(key.to_string(), "range: f64..f64 or f64 +/- f64")
+                })?;
                 let f1 = caps[1].parse::<f64>()?;
                 let f2 = caps[3].parse::<f64>()?;
                 match &caps[2] {
@@ -212,18 +207,16 @@ impl Config {
             Value::Array(a) if a.len() == 2 => {
                 let f1 = a[0]
                     .as_f64()
-                    .or(a[0].as_i64().and_then(|v| Some(v as f64)))
-                    .ok_or(QedaError::InvalidElementType(
-                        key.to_string(),
-                        "range: [f64, f64]",
-                    ))?;
+                    .or_else(|| a[1].as_i64().map(|v| v as f64))
+                    .ok_or_else(|| {
+                        QedaError::InvalidElementType(key.to_string(), "range: [f64, f64]")
+                    })?;
                 let f2 = a[1]
                     .as_f64()
-                    .or(a[1].as_i64().and_then(|v| Some(v as f64)))
-                    .ok_or(QedaError::InvalidElementType(
-                        key.to_string(),
-                        "range: [f64, f64]",
-                    ))?;
+                    .or_else(|| a[1].as_i64().map(|v| v as f64))
+                    .ok_or_else(|| {
+                        QedaError::InvalidElementType(key.to_string(), "range: [f64, f64]")
+                    })?;
                 Ok(Range(f1, f2))
             }
             _ => Err(QedaError::InvalidElementType(key.to_string(), "range").into()),
@@ -237,7 +230,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_str()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "string"))?)
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "string"))?)
     }
 
     /// Returns a `String` config value.
@@ -247,7 +240,7 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_str()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "string"))?
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "string"))?
             .to_string())
     }
 
@@ -258,10 +251,11 @@ impl Config {
         Ok(self
             .get_element(key)?
             .as_f64()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "number"))?
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "number"))?
             .round() as u64)
     }
 
+    /// Inserts an object to the `Config`.
     pub fn insert_object(&mut self, key: &str, value: &str) -> Result<()> {
         let map = self.json.as_object_mut().unwrap();
         if !map.contains_key(key) {
@@ -270,11 +264,12 @@ impl Config {
         }
         let child = map[key]
             .as_object_mut()
-            .ok_or(QedaError::InvalidElementType(key.to_string(), "object"))?;
+            .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "object"))?;
         child.insert(value.to_string(), Value::Object(Map::new()));
         Ok(())
     }
 
+    /// Saves the `Config` to YAML file.
     pub fn save(self, path: &str) -> Result<()> {
         let yaml = Self::json_to_yaml(self.json)?;
 
@@ -285,20 +280,20 @@ impl Config {
         Ok(())
     }
 
+    /// Calculates the `Config` digest (a.k.a. fingerprint).
     pub fn calc_digest(&self) -> String {
         let mut hasher = Hasher::new(Algorithm::SHA256);
         self.update_digest(&self.json, &mut hasher);
         hex::encode(hasher.finish())
     }
 
+    /// Merges the `Config`with another.
     pub fn merge(self, _with: &Config) -> Self {
         // TODO: Implement
         self
     }
-}
 
-// Private methods
-impl Config {
+    // Convert JSON to YAML
     fn json_to_yaml(json: Value) -> Result<Yaml> {
         Ok(match json {
             Value::Null => Yaml::Null,
@@ -322,6 +317,7 @@ impl Config {
         })
     }
 
+    // Convert YAML to JSON
     fn yaml_to_json(yaml: Yaml) -> Result<Value> {
         Ok(match yaml {
             Yaml::Real(s) => Value::Number(Number::from_f64(s.parse().unwrap()).unwrap()),
@@ -369,6 +365,14 @@ impl Config {
             }
             _ => (),
         }
+    }
+}
+
+impl Default for Config {
+    /// Creates an empty `Config`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

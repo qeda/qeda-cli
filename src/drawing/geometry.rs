@@ -21,7 +21,7 @@ pub struct Size {
 
 impl Size {
     pub fn new(x: f64, y: f64) -> Self {
-        Size { x: x, y: y }
+        Size { x, y }
     }
 }
 
@@ -41,7 +41,7 @@ pub struct Point {
 
 impl Point {
     pub fn new(x: f64, y: f64) -> Self {
-        Point { x: x, y: y }
+        Point { x, y }
     }
 
     pub fn distance_to(&self, p: &Point) -> f64 {
@@ -68,7 +68,8 @@ pub struct Transformation {
 }
 
 impl Transformation {
-    pub fn new() -> Transformation {
+    /// Creates an empty `Transformation`.
+    pub fn new() -> Self {
         Transformation {
             m: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
             scale: 1.0,
@@ -77,16 +78,19 @@ impl Transformation {
         }
     }
 
+    /// Adds scaling to the `Transformation`.
     pub fn scale(&mut self, sx: f64, sy: f64) {
         let s = [sx, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 1.0];
         self.multiply(&s);
     }
 
+    /// Adds translating to the `Transformation`.
     pub fn translate(&mut self, dx: f64, dy: f64) {
         let t = [1.0, 0.0, dx, 0.0, 1.0, dy, 0.0, 0.0, 1.0];
         self.multiply(&t);
     }
 
+    /// Transforms a given `Point`.
     pub fn transform_point(&self, p: &mut Point) {
         let x = self.m[0] * p.x + self.m[1] * p.y + self.m[2];
         let y = self.m[3] * p.x + self.m[4] * p.y + self.m[5];
@@ -108,10 +112,18 @@ impl Transformation {
         self.m = [m00, m01, m02, m10, m11, m12, m20, m21, m22];
         self.scale_x = (self.m[0] * self.m[0] + self.m[3] * self.m[3]).sqrt();
         self.scale_y = (self.m[1] * self.m[1] + self.m[4] * self.m[4]).sqrt();
-        self.scale = if self.scale_x == self.scale_y {
+        self.scale = if (self.scale_x - self.scale_y).abs() < f64::EPSILON {
             self.scale_x
         } else {
             ((self.scale_x * self.scale_x + self.scale_y * self.scale_y) / 2.0).sqrt()
         }
+    }
+}
+
+impl Default for Transformation {
+    /// Creates an empty `Transformation`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }

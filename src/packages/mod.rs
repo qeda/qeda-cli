@@ -16,6 +16,7 @@ pub enum PackageType {
 }
 
 impl Default for PackageType {
+    #[inline]
     fn default() -> Self {
         PackageType::Unknown
     }
@@ -33,21 +34,31 @@ impl Debug for dyn PackageHandler {
 }
 
 #[derive(Debug)]
-pub struct Packages<'a> {
-    handlers: HashMap<&'a str, Box<dyn PackageHandler>>,
+pub struct Packages {
+    handlers: HashMap<&'static str, Box<dyn PackageHandler>>,
 }
 
-impl<'a> Packages<'a> {
+impl Packages {
+    /// Creates an empty `Packages`.
     pub fn new() -> Self {
-        let mut handlers: HashMap<&'a str, Box<dyn PackageHandler>> = HashMap::new();
+        let mut handlers: HashMap<&'static str, Box<dyn PackageHandler>> = HashMap::new();
         handlers.insert("chip", Box::new(ChipPackage::new()));
 
         Packages { handlers }
     }
 
-    pub fn get_handler(&self, key: &str) -> Result<&Box<dyn PackageHandler>> {
+    pub fn get_handler(&self, key: &str) -> Result<&dyn PackageHandler> {
         self.handlers
             .get(key)
-            .ok_or(QedaError::InvalidPackageType(key.to_string()).into())
+            .map(|v| v.as_ref())
+            .ok_or_else(|| QedaError::InvalidPackageType(key.to_string()).into())
+    }
+}
+
+impl Default for Packages {
+    /// Creates an empty `Packages`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }

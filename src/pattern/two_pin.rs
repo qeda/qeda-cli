@@ -1,6 +1,5 @@
 use crate::config::Config;
 use crate::drawing::*;
-use crate::error::*;
 
 use super::{mask, silkscreen, PadProperties};
 
@@ -21,8 +20,8 @@ impl TwoPin {
     }
 
     /// Draws two pin pattern.
-    pub fn draw(&self, drawing: &mut Drawing, lib_cfg: &Config) -> Result<()> {
-        super::add_attributes(drawing, lib_cfg)?;
+    pub fn draw(&self, drawing: &mut Drawing, lib_cfg: &Config) {
+        super::add_attributes(drawing, lib_cfg);
 
         let pad_left = Pad::new("1")
             .shape(PadShape::Rect)
@@ -39,8 +38,6 @@ impl TwoPin {
         silkscreen::draw_body(drawing, &self.body, &pads, lib_cfg);
 
         drawing.add_pads(pads);
-
-        Ok(())
     }
 
     /// Builds a `TwoPin` with modified pad properties.

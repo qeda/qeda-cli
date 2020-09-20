@@ -63,16 +63,24 @@ impl fmt::Display for Layer {
             layers.push("B.Fab");
         }
 
+        if self.contains(Layer::COURTYARD_TOP | Layer::COURTYARD_BOTTOM) {
+            layers.push("*.CrtYd");
+        } else if self.contains(Layer::COURTYARD_TOP) {
+            layers.push("F.CrtYd");
+        } else if self.contains(Layer::COURTYARD_BOTTOM) {
+            layers.push("B.CrtYd");
+        }
+
         write!(f, "{}", layers.join(" "))
     }
 }
 
 impl KicadFootprints {
-    pub fn render(&mut self, components: &Vec<Component>, _lib_cfg: &Config) -> Result<()> {
+    pub fn render(self, components: &[Component], _lib_cfg: &Config) -> Result<()> {
         for component in components {
             let name = &component.name;
             let pattern = &component.pattern;
-            info!("  • {}", name);
+            info!("  • foorprint: '{}'", name);
             let mut f = File::create(format!("{}.kicad_mod", name))?;
             writeln!(f, "(module {name} (layer F.Cu)", name = name)?;
             for element in &pattern.elements {
@@ -85,14 +93,14 @@ impl KicadFootprints {
                         };
                         writeln!(
                             f,
-                            "  (fp_text {kind} {value} (at {x} {y}) (layer {layer})",
+                            "  (fp_text {kind} {value} (at {x:.3} {y:.3}) (layer {layer})",
                             kind = kind,
                             value = value,
                             x = a.origin.x,
                             y = a.origin.y,
                             layer = a.layer,
                         )?;
-                        writeln!(f, "    (effects (font (size {font_size} {font_size}) (thickness {line_width})))",
+                        writeln!(f, "    (effects (font (size {font_size:.3} {font_size:.3}) (thickness {line_width:.3})))",
                             font_size = a.font_size,
                             line_width = a.line_width,
                         )?;
@@ -101,7 +109,7 @@ impl KicadFootprints {
                     Element::Line(l) => {
                         writeln!(
                             f,
-                            "  (fp_line (start {x0} {y0}) (end {x1} {y1}) (layer {layer}) (width {width}))",
+                            "  (fp_line (start {x0:.3} {y0:.3}) (end {x1:.3} {y1:.3}) (layer {layer}) (width {width:.3}))",
                             x0 = l.p.0.x,
                             y0 = l.p.0.y,
                             x1 = l.p.1.x,
@@ -113,7 +121,7 @@ impl KicadFootprints {
                     Element::Pad(p) => {
                         writeln!(
                             f,
-                            "  (pad {name} {kind} {shape} (at {x} {y}) (size {sx} {sy}) (layers {layers}) (solder_mask_margin {mask}))",
+                            "  (pad {name} {kind} {shape} (at {x:.3} {y:.3}) (size {sx:.3} {sy:.3}) (layers {layers}) (solder_mask_margin {mask:.3}))",
                             name = p.name,
                             kind = if p.is_smd() { "smd" } else { "thru_hole" },
                             shape = p.shape,

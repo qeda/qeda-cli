@@ -28,7 +28,7 @@ impl Ipc7351B {
     /// Creates an empty Ipc7351B.
     pub fn new(package_type: PackageType) -> Self {
         Ipc7351B {
-            package_type: package_type,
+            package_type,
             ..Self::default()
         }
     }
@@ -136,21 +136,13 @@ impl Ipc7351B {
 
     /// Gets settings from a config and applies them.
     pub fn settings(mut self, lib_cfg: &Config) -> Self {
-        self.fab_tol = lib_cfg
-            .get_f64("pattern.tolerance.fabrication")
-            .unwrap_or(0.05);
-        self.place_tol = lib_cfg
-            .get_f64("pattern.tolerance.placement")
-            .unwrap_or(0.025);
-        self.clearance = lib_cfg
-            .get_f64("pattern.clearance.pad-to-pad")
-            .unwrap_or(0.0);
-        self.density_level(lib_cfg.get_str("pattern.density-level").unwrap_or("N"))
+        self.fab_tol = lib_cfg.get_f64("pattern.tolerance.fabrication").unwrap();
+        self.place_tol = lib_cfg.get_f64("pattern.tolerance.placement").unwrap();
+        self.clearance = lib_cfg.get_f64("pattern.clearance.pad-to-pad").unwrap();
+        self.density_level(lib_cfg.get_str("pattern.density-level").unwrap())
     }
-}
 
-// Private methods
-impl Ipc7351B {
+    // Set goals according to the density level
     fn density_level(mut self, density_level: &str) -> Self {
         let i = match density_level {
             "M" | "m" | "most" => 0,
@@ -232,11 +224,13 @@ impl Ipc7351B {
         self
     }
 
+    // Round off placement values
     fn round_place(value: f64) -> f64 {
         let factor = 0.02;
         (value / factor).round() * factor
     }
 
+    // Round off size values
     fn round_size(value: f64) -> f64 {
         let factor = 0.01;
         (value / factor).round() * factor
@@ -254,7 +248,7 @@ mod tests {
             .lead_span(Range(5.85, 6.2))
             .lead_width(Range(0.31, 0.51))
             .lead_len(Range(0.4, 1.27))
-            .settings(&Config::new())
+            .settings(&load_config!("../qeda.yml"))
             .calc();
 
         assert_eq!(pad_props.distance, 4.96);

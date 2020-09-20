@@ -1,10 +1,8 @@
 use crate::config::Config;
 use crate::drawing::{Drawing, Layer, Line, Pad, Rect};
 
-pub fn draw_body(drawing: &mut Drawing, body: &Rect, _pads: &Vec<Pad>, lib_cfg: &Config) {
-    let line_width = lib_cfg
-        .get_f64("pattern.line-width.silkscreen")
-        .unwrap_or(0.0);
+pub fn draw_body(drawing: &mut Drawing, body: &Rect, _pads: &[Pad], lib_cfg: &Config) {
+    let line_width = lib_cfg.get_f64("pattern.line-width.silkscreen").unwrap();
 
     let rect = body
         .clone()

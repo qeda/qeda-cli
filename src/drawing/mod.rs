@@ -174,17 +174,8 @@ impl Drawing {
             _ => None,
         })
     }
-}
 
-impl Transform for Drawing {
-    fn transform(mut self, t: &Transformation) -> Self {
-        self.elements = self.elements.into_iter().map(|e| e.transform(t)).collect();
-        self
-    }
-}
-
-// Private methods
-impl Drawing {
+    // Add a symbol pin
     fn add_symbol_pin(&mut self, id: &str, pinout: &Pinout, line: Line) -> Result<()> {
         let id_elems: Vec<&str> = id.split(':').collect();
         ensure!(
@@ -199,20 +190,35 @@ impl Drawing {
         let re = Regex::new(r"^pin-(.*)$").unwrap();
         let caps = re
             .captures(name)
-            .ok_or(QedaError::InvalidSvgPinName(name.to_string()))?;
+            .ok_or_else(|| QedaError::InvalidSvgPinName(name.to_string()))?;
 
         let name = &caps[1];
-        let halign = HAlign::from_str(halign);
-        let valign = VAlign::from_str(valign);
+        let halign = HAlign::from_str(halign)?;
+        let valign = VAlign::from_str(valign)?;
 
         let pin = pinout
             .get_first(name)
-            .ok_or(QedaError::InvalidSvgPinName(name.to_string()))?;
+            .ok_or_else(|| QedaError::InvalidSvgPinName(name.to_string()))?;
         let sym_pin =
             SymbolPin::new(pin.clone(), halign, valign, &line).transform(&self.canvas_transform);
 
         self.elements.push(Element::SymbolPin(sym_pin));
 
         Ok(())
+    }
+}
+
+impl Default for Drawing {
+    /// Creates an empty `Drawing`.
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Transform for Drawing {
+    fn transform(mut self, t: &Transformation) -> Self {
+        self.elements = self.elements.into_iter().map(|e| e.transform(t)).collect();
+        self
     }
 }

@@ -5,7 +5,6 @@ mod two_pin;
 
 use crate::config::Config;
 use crate::drawing::{Attribute, Drawing, Layer, Size};
-use crate::error::Result;
 
 pub use calc::Ipc7351B;
 pub use two_pin::TwoPin;
@@ -21,30 +20,26 @@ pub struct PadProperties {
 impl PadProperties {
     /// Applies post processing according to the pattern config.
     pub fn post_proc(mut self, comp_cfg: &Config, lib_cfg: &Config) -> Self {
-        let space_for_iron = lib_cfg
-            .get_f64("pattern.minimum.space-for-iron")
-            .unwrap_or(0.0);
-        let always_calc = lib_cfg
-            .get_bool("pattern.always-calculate")
-            .unwrap_or(false);
+        let space_for_iron = lib_cfg.get_f64("pattern.minimum.space-for-iron").unwrap();
+        let always_calc = lib_cfg.get_bool("pattern.always-calculate").unwrap();
 
         if !always_calc {
-            if let Some(pad_width) = comp_cfg.get_f64("pattern.pad-size-x").ok() {
+            if let Ok(pad_width) = comp_cfg.get_f64("pattern.pad-size-x") {
                 self.size.x = pad_width;
             }
-            if let Some(pad_height) = comp_cfg.get_f64("pattern.pad-size-y").ok() {
+            if let Ok(pad_height) = comp_cfg.get_f64("pattern.pad-size-y") {
                 self.size.y = pad_height;
             }
-            if let Some(pad_size) = comp_cfg.get_pair("pattern.pad-size").ok() {
+            if let Ok(pad_size) = comp_cfg.get_pair("pattern.pad-size") {
                 self.size = Size::new(pad_size.0, pad_size.1);
             }
-            if let Some(pad_distance) = comp_cfg.get_f64("pattern.pad-distance").ok() {
+            if let Ok(pad_distance) = comp_cfg.get_f64("pattern.pad-distance") {
                 self.distance = pad_distance;
             }
-            if let Some(pad_span) = comp_cfg.get_f64("pattern.pad-span").ok() {
+            if let Ok(pad_span) = comp_cfg.get_f64("pattern.pad-span") {
                 self.distance = pad_span - self.size.x;
             }
-            if let Some(pad_space) = comp_cfg.get_f64("pattern.pad-space").ok() {
+            if let Ok(pad_space) = comp_cfg.get_f64("pattern.pad-space") {
                 self.distance = pad_space + self.size.x;
             }
         }
@@ -60,18 +55,16 @@ impl PadProperties {
     }
 }
 
-fn add_attributes(drawing: &mut Drawing, lib_cfg: &Config) -> Result<()> {
+fn add_attributes(drawing: &mut Drawing, lib_cfg: &Config) {
     let ref_des = Attribute::new("ref-des", "U")
-        .font_size(lib_cfg.get_f64("pattern.font-size.ref-des")?)
-        .line_width(lib_cfg.get_f64("pattern.line-width.silkscreen")?)
+        .font_size(lib_cfg.get_f64("pattern.font-size.ref-des").unwrap())
+        .line_width(lib_cfg.get_f64("pattern.line-width.silkscreen").unwrap())
         .layer(Layer::SILKSCREEN_TOP);
     let value = Attribute::new("value", "?")
-        .font_size(lib_cfg.get_f64("pattern.font-size.value")?)
-        .line_width(lib_cfg.get_f64("pattern.line-width.assembly")?)
+        .font_size(lib_cfg.get_f64("pattern.font-size.value").unwrap())
+        .line_width(lib_cfg.get_f64("pattern.line-width.assembly").unwrap())
         .layer(Layer::ASSEMBLY_TOP);
 
     drawing.add_attribute(ref_des);
     drawing.add_attribute(value);
-
-    Ok(())
 }

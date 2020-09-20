@@ -9,17 +9,12 @@ pub struct Box3D {
 }
 
 impl Box3D {
+    /// Creates an empty `Box3D`.
     pub fn new() -> Self {
-        Box3D {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            dx: 0.0,
-            dy: 0.0,
-            dz: 0.0,
-        }
+        Self::default()
     }
 
+    /// Builds a `Box3D` with modified origin.
     pub fn origin(mut self, x: f64, y: f64, z: f64) -> Self {
         self.x = x;
         self.y = y;
@@ -27,6 +22,7 @@ impl Box3D {
         self
     }
 
+    /// Builds a `Box3D` with modified dimensions.
     pub fn dimensions(mut self, dx: f64, dy: f64, dz: f64) -> Self {
         self.dx = dx;
         self.dy = dy;

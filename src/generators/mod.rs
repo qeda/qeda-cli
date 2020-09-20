@@ -24,9 +24,10 @@ impl<'a> Generators<'a> {
         Generators { handlers }
     }
 
-    pub fn get(&self, key: &str) -> Result<&Box<dyn GeneratorHandler>> {
+    pub fn get(&self, key: &str) -> Result<&dyn GeneratorHandler> {
         self.handlers
             .get(key)
-            .ok_or(QedaError::InvalidGeneratorType(key.to_string()).into())
+            .map(|v| v.as_ref())
+            .ok_or_else(|| QedaError::InvalidGeneratorType(key.to_string()).into())
     }
 }

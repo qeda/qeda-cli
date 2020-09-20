@@ -37,7 +37,9 @@ impl GeneratorHandler for KicadGenerator {
         info!("rendering KiCad symbol library: '{}.lib'", name);
         fs::create_dir_all(KICADLIB_DIR)?;
         env::set_current_dir(KICADLIB_DIR)?;
-        KicadSymbols::new(name).render(&components, &config)?;
+        KicadSymbols::new(name)
+            .settings(&config)
+            .render(&components)?;
 
         info!("rendering KiCad footprints: '{}.pretty'", name);
         let pattern_dir = format!("{}.pretty", name);
@@ -54,6 +56,7 @@ impl GeneratorHandler for KicadGenerator {
         env::set_current_dir(env::current_dir()?.parent().unwrap())?;
 
         env::set_current_dir(env::current_dir()?.parent().unwrap())?;
+
         Ok(())
     }
 }

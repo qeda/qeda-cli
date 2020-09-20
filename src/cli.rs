@@ -7,9 +7,9 @@ use crate::config::Config;
 use crate::error::*;
 use crate::library::Library;
 
-const QEDA_YML: &'static str = ".qeda.yml";
+const QEDA_YML: &str = ".qeda.yml";
 
-const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
+const QEDA_EXAMPLES: &str = r"EXAMPLES:
     qeda reset
     qeda add ti/iso721
     qeda power +5V_DC
@@ -17,16 +17,16 @@ const QEDA_EXAMPLES: &'static str = r"EXAMPLES:
     qeda config output kicad
     qeda generate mylib";
 
-pub fn run() -> Result<()> {
+pub async fn run() -> Result<()> {
     let matches = cli().get_matches();
     match matches.subcommand() {
-        ("add", Some(m)) => add_component(m)?,
-        ("load", Some(m)) => load_component(m)?,
+        ("add", Some(m)) => add_component(m).await?,
+        ("load", Some(m)) => load_component(m).await?,
         ("test", Some(m)) => test_component(m)?,
         ("power", Some(m)) => add_power(m)?,
         ("ground", Some(m)) => add_ground(m)?,
         ("config", Some(m)) => configure(m)?,
-        ("generate", Some(m)) => generate(m)?,
+        ("generate", Some(m)) => generate(m).await?,
         ("reset", Some(_)) => reset()?,
         ("sort", Some(_)) => sort()?,
         ("completion", Some(m)) => get_completion(m)?,
@@ -106,10 +106,10 @@ fn cli() -> App<'static, 'static> {
         )
 }
 
-fn add_component(m: &ArgMatches) -> Result<()> {
+async fn add_component(m: &ArgMatches<'_>) -> Result<()> {
     let mut lib = Library::new();
     let component_id = m.value_of("component").unwrap();
-    lib.add_component(component_id)?;
+    lib.add_component(component_id).await?;
 
     Config::create_if_missing(QEDA_YML)?;
     let mut config = Config::from_yaml_file(QEDA_YML)?;
@@ -118,9 +118,9 @@ fn add_component(m: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn load_component(m: &ArgMatches) -> Result<()> {
+async fn load_component(m: &ArgMatches<'_>) -> Result<()> {
     let lib = Library::new();
-    lib.load_component(m.value_of("component").unwrap())?;
+    lib.load_component(m.value_of("component").unwrap()).await?;
     Ok(())
 }
 
@@ -144,14 +144,14 @@ fn configure(m: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn generate(m: &ArgMatches) -> Result<()> {
+async fn generate(m: &ArgMatches<'_>) -> Result<()> {
     ensure!(
         Path::new(QEDA_YML).exists(),
         QedaError::MissingConfigFile(QEDA_YML.to_string())
     );
 
     let config = Config::from_yaml_file(QEDA_YML)?;
-    let lib = Library::from_config(&config)?;
+    let lib = Library::from_config(&config).await?;
     lib.generate(m.value_of("library").unwrap())?;
     Ok(())
 }

@@ -29,13 +29,14 @@ impl Rect {
         self
     }
 
-    /// Changes the layer.
+    /// Builds a `Rect` with modified layer.
     pub fn layer(mut self, layer: Layer) -> Self {
         self.layer = layer;
         self
     }
 
-    pub fn to_lines(self) -> Vec<Line> {
+    /// Converts the `Rect` to a vector of `Line`s.
+    pub fn to_lines(&self) -> Vec<Line> {
         vec![
             Line::new(self.p.0.x, self.p.0.y, self.p.0.x, self.p.1.y)
                 .width(self.line_width)
@@ -52,7 +53,8 @@ impl Rect {
         ]
     }
 
-    /// Changes line width.
+    /// Builds a `Rect` with modified line width.
+    #[inline]
     pub fn line_width(mut self, width: f64) -> Self {
         self.line_width = width;
         self

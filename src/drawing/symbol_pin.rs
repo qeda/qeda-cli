@@ -7,12 +7,13 @@ use crate::pinout::Pin;
 pub struct SymbolPin {
     pub pin: Pin,
     pub origin: Point,
-    pub len: f64,
+    pub length: f64,
     pub direction: PinDirection,
     pub visibility: Visibility,
 }
 
 impl SymbolPin {
+    /// Creates an empty `SymbolPin`.
     pub fn new(pin: Pin, halign: HAlign, valign: VAlign, l: &Line) -> Self {
         let direction = match halign {
             HAlign::Center => match valign {
@@ -36,11 +37,11 @@ impl SymbolPin {
         };
 
         SymbolPin {
-            pin: pin,
-            origin: Point { x: x, y: y },
-            len: l.len(),
-            direction: direction,
-            visibility: Visibility(true),
+            pin,
+            origin: Point::new(x, y),
+            length: l.length(),
+            direction,
+            visibility: Visibility::default(),
         }
     }
 }
@@ -48,7 +49,7 @@ impl SymbolPin {
 impl Transform for SymbolPin {
     fn transform(mut self, t: &Transformation) -> Self {
         self.origin = self.origin.transform(t);
-        self.len *= t.scale;
+        self.length *= t.scale;
         // TODO: Change `direction` according to rotation
         self
     }

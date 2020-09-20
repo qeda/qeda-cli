@@ -23,14 +23,7 @@ impl Attribute {
         Attribute {
             id: id.to_string(),
             value: value.to_string(),
-            origin: Point::default(),
-            font_size: 0.0,
-            line_width: 0.0,
-            halign: HAlign::default(),
-            valign: VAlign::default(),
-            orientation: Orientation::default(),
-            layer: Layer::NONE,
-            visibility: Visibility(true),
+            ..Self::default()
         }
     }
 
@@ -42,18 +35,21 @@ impl Attribute {
     }
 
     /// Builds an `Attribute` with modified font size.
+    #[inline]
     pub fn font_size(mut self, font_size: f64) -> Self {
         self.font_size = font_size;
         self
     }
 
     /// Builds an `Attribute` with modified layer.
+    #[inline]
     pub fn layer(mut self, layer: Layer) -> Self {
         self.layer = layer;
         self
     }
 
     /// Builds an `Attribute` with modified line width.
+    #[inline]
     pub fn line_width(mut self, line_width: f64) -> Self {
         self.line_width = line_width;
         self
@@ -61,7 +57,8 @@ impl Attribute {
 
     /// Builds an `Attribute` with modified origin.
     pub fn origin(mut self, x: f64, y: f64) -> Self {
-        self.origin = Point::new(x, y);
+        self.origin.x = x;
+        self.origin.y = y;
         self
     }
 }
