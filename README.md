@@ -1,16 +1,24 @@
-QEDA
-====
+# QEDA
+
+[![Build Status](https://github.com/qeda/qeda-rs/workflows/Build/badge.svg)](https://github.com/qeda/qeda-rs/actions)
 
 QEDA is a command-line tool aimed to simplify creating electronic component libraries for using in EDA software. You can easily create both symbols for schematic and land patterns for PCB.
+
+* :eight_spoked_asterisk: https://qeda.org
+* :book: https://docs.qeda.org
+
+**Attention!** Work in progress at the moment. There is the significant lack of functionality. The project is not ready for using in production.
+
+## Download
+
+* Linux development build: https://builds.qeda.org/dev/qeda-linux-x86_64-dev.tar.xz
+* Windows development build: https://builds.qeda.org/dev/qeda-windows-x86_64-dev.7z
+
+## Comparing to the Previous Version
 
 The [previous version](https://github.com/qeda/qeda) was written using CoffeeScript and it is available as an [NPM module](https://www.npmjs.com/package/qeda).
 
 This version is rewritten in Rust language from scratch.
-
-**Attention!** Work in progress at the moment. There is the significant lack of functionality. The project is not ready for using in production.
-
-Comparing to the Previous Version
-=================================
 
 - [x] Faster
 - [x] Improved error handling
@@ -19,10 +27,10 @@ Comparing to the Previous Version
 - [ ] Custom symbols from SVG
 - [ ] More powerful land pattern generator for non-standard patterns
 - [ ] Step 3D-models generation
-- [ ] Multithreading support
+- [x] Multithreading support
+- [ ] Server mode
 
-Roadmap
-=======
+## Roadmap
 
 - Symbols:
     - [x] Capacitor
@@ -100,26 +108,21 @@ Roadmap
 - EDA:
     - [x] KiCad
 
-Build
-=====
+## Build on Ubuntu
 
-Ubuntu
-------
+0. Prerequisites:
 
-Prerequisites:
+        sudo apt install -y pkgconf libssl-dev
 
-    sudo apt install -y pkgconf libssl-dev
+1. Build:
 
-Build:
+        cargo build
 
-    cargo build
+2. Test:
 
-Test:
+        ./target/debug/qeda --help
 
-    ./target/debug/qeda --help
-
-First Steps
-===========
+## First Steps
 
 Load and add a new component:
 
@@ -129,14 +132,12 @@ Generate a new KiCad library:
 
     qeda generate mylib
 
-More Details
-============
+## More Details
 
 Run for available options:
 
     qeda --help
 
-License
-=======
+## License
 
-Source code is licensed under [MIT license](LICENSE).
+Source code is licensed under the [MIT license](LICENSE).

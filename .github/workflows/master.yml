@@ -1,0 +1,58 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Prepare
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64 p7zip
+          rustup install nightly && rustup default nightly
+          rustup target add x86_64-pc-windows-gnu
+          sed -i '1i cargo-features = ["strip"]' Cargo.toml
+
+      - name: Build for Linux
+        run: |
+          cargo build --release -Z unstable-options -Z config-include --config release.toml
+          mkdir -p qeda-linux-x86_64-dev
+          cp -vf target/release/qeda qeda-linux-x86_64-dev/
+          XZ_OPT=-9 tar cJf qeda-linux-x86_64-dev.tar.xz qeda-linux-x86_64-dev
+          du -h qeda-linux-x86_64-dev.tar.xz
+          mkdir -p deploy/dev
+          mv -fv qeda-linux-x86_64-dev.tar.xz deploy/dev/
+
+      - name: Build for Windows
+        run: |
+          cargo build --target=x86_64-pc-windows-gnu --release -Z unstable-options -Z config-include --config release.toml
+          mkdir -p qeda-windows-x86_64-dev
+          cp -vf target/x86_64-pc-windows-gnu/release/qeda.exe qeda-windows-x86_64-dev/
+          7z a -t7z -mx=9 qeda-windows-x86_64-dev.7z qeda-windows-x86_64-dev
+          du -h qeda-windows-x86_64-dev.7z
+          mkdir -p deploy/dev
+          mv -fv qeda-windows-x86_64-dev.7z deploy/dev/
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          cname: builds.qeda.org
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
