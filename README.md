@@ -1,13 +1,13 @@
-# QEDA
+# QEDA Command Line Interface
 
 [![Build Status](https://github.com/qeda/qeda-rs/workflows/Build/badge.svg)](https://github.com/qeda/qeda-rs/actions)
 
-QEDA is a command-line tool aimed to simplify creating electronic component libraries for using in EDA software. You can easily create both symbols for schematic and land patterns for PCB.
+QEDA Command Line Interface (CLI) is a tool to simplify creating electronic component libraries for using in EDA software. You can easily create both symbols for schematic and land patterns for PCB.
 
 * :eight_spoked_asterisk: https://qeda.org
-* :book: https://docs.qeda.org
+* :book: https://docs.qeda.org/cli/
 
-**Attention!** Work in progress at the moment. There is the significant lack of functionality. The project is not ready for using in production.
+**Attention!** Active work in progress at the moment. There is the significant lack of functionality. The project is not ready for using in production.
 
 ## Download
 
@@ -16,19 +16,20 @@ QEDA is a command-line tool aimed to simplify creating electronic component libr
 
 ## Comparing to the Previous Version
 
-The [previous version](https://github.com/qeda/qeda) was written using CoffeeScript and it is available as an [NPM module](https://www.npmjs.com/package/qeda).
+The [previous version](https://github.com/qeda/qeda) had been written using CoffeeScript and it is available as an [NPM module](https://www.npmjs.com/package/qeda).
 
-This version is rewritten in Rust language from scratch.
+The current version is rewritten in Rust language from scratch.
 
-- [x] Faster
+What's new:
+
+- [x] Much faster
 - [x] Improved error handling
 - [x] Using SVG for discrete component symbols
-- [x] More idiomatic component YAML-descripton
+- [x] Revised component's YAML-descripton to be more idiomatic
 - [ ] Custom symbols from SVG
 - [ ] More powerful land pattern generator for non-standard patterns
-- [ ] Step 3D-models generation
+- [ ] 3D-models generation in STEP format
 - [x] Multithreading support
-- [ ] Server mode
 
 ## Roadmap
 
@@ -112,31 +113,58 @@ This version is rewritten in Rust language from scratch.
 
 0. Prerequisites:
 
-        sudo apt install -y pkgconf libssl-dev
+    ```bash
+    sudo apt install -y pkgconf libssl-dev
+    # or
+    make prepare
+    ```
 
 1. Build:
 
-        cargo build
+    ```bash
+    cargo build
+    # or
+    make
+    ```
+
 
 2. Test:
 
-        ./target/debug/qeda --help
+    ```bash
+    ./target/debug/qeda --version
+    ```
+
+3. Install:
+
+    ```bash
+    cargo install --path .
+    # or
+    make install
+    ```
 
 ## First Steps
 
 Load and add a new component:
 
-    qeda add capacitor/c0603
+```bash
+qeda add capacitor/c0603
+```
 
 Generate a new KiCad library:
 
-    qeda generate mylib
+```bash
+qeda generate mylib
+```
 
 ## More Details
 
 Run for available options:
 
-    qeda --help
+```bash
+qeda --help
+```
+
+Refer to documentation: https://docs.qeda.org/cli/
 
 ## License
 
