@@ -53,6 +53,12 @@ pub enum QedaError {
     #[error("missing element '{0}' in config")]
     MissingElement(String),
 
+    #[error("unknown config parameter: '{0}'")]
+    UnknownConfigParameter(String),
+
+    #[error("config parameter has unsupported type: '{0}'")]
+    UnsupportedConfigParameterType(String),
+
     #[error("unsupported SVG units: '{0}'")]
     UnsupportedSvgUnits(String),
 }

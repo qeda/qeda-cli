@@ -53,15 +53,25 @@ impl Config {
         }
     }
 
+    /// Calculates the `Config` digest (a.k.a. fingerprint).
+    pub fn calc_digest(&self) -> String {
+        let mut hasher = Hasher::new(Algorithm::SHA256);
+        self.update_digest(&self.json, &mut hasher);
+        hex::encode(hasher.finish())
+    }
+
+    /// Creates a new file if it doesn't exist.
+    pub fn create_if_missing(path: &str) -> Result<()> {
+        if !Path::new(path).exists() {
+            fs::write(path, b"---")?;
+        }
+        Ok(())
+    }
+
     /// Creates a new `Config` from JSON string.
     pub fn from_json(json: &str) -> Result<Config> {
         let value: Value = serde_json::from_str(json)?;
         Ok(Config { json: value })
-    }
-
-    /// Creates a new `Config` from YAML file.
-    pub fn from_yaml_file(path: &str) -> Result<Config> {
-        Self::from_yaml(&fs::read_to_string(path)?)
     }
 
     /// Creates a new `Config` from YAML string.
@@ -75,12 +85,9 @@ impl Config {
         Ok(Config { json })
     }
 
-    /// Creates a new file if it doesn't exist.
-    pub fn create_if_missing(path: &str) -> Result<()> {
-        if !Path::new(path).exists() {
-            fs::write(path, b"---")?;
-        }
-        Ok(())
+    /// Creates a new `Config` from YAML file.
+    pub fn from_yaml_file(path: &str) -> Result<Config> {
+        Self::from_yaml(&fs::read_to_string(path)?)
     }
 
     /// Returns a `bool` config value.
@@ -255,8 +262,21 @@ impl Config {
             .round() as u64)
     }
 
+    /// Inserts (or replaces) a specified value.
+    pub fn insert(&mut self, key: &str, value: Value) {
+        let keys = key.split('.');
+        let mut element = &mut self.json;
+        for key in keys {
+            if !element[key].is_null() {
+                element[key] = Value::Object(Map::new());
+            }
+            element = &mut element[key];
+        }
+        *element = value;
+    }
+
     /// Inserts an object to the `Config`.
-    pub fn insert_object(&mut self, key: &str, value: &str) -> Result<()> {
+    pub fn insert_object(&mut self, key: &str, name: &str) -> Result<()> {
         let map = self.json.as_object_mut().unwrap();
         if !map.contains_key(key) {
             // Insert child if doesn't exist
@@ -265,8 +285,14 @@ impl Config {
         let child = map[key]
             .as_object_mut()
             .ok_or_else(|| QedaError::InvalidElementType(key.to_string(), "object"))?;
-        child.insert(value.to_string(), Value::Object(Map::new()));
+        child.insert(name.to_string(), Value::Object(Map::new()));
         Ok(())
+    }
+
+    /// Merges the `Config`with another.
+    pub fn merge(mut self, with: &Config) -> Self {
+        Self::merge_objects(&mut self.json, &with.json);
+        self
     }
 
     /// Saves the `Config` to YAML file.
@@ -278,19 +304,6 @@ impl Config {
         emitter.dump(&yaml)?;
         fs::write(path, yaml_string.as_bytes())?;
         Ok(())
-    }
-
-    /// Calculates the `Config` digest (a.k.a. fingerprint).
-    pub fn calc_digest(&self) -> String {
-        let mut hasher = Hasher::new(Algorithm::SHA256);
-        self.update_digest(&self.json, &mut hasher);
-        hex::encode(hasher.finish())
-    }
-
-    /// Merges the `Config`with another.
-    pub fn merge(self, _with: &Config) -> Self {
-        // TODO: Implement
-        self
     }
 
     // Convert JSON to YAML
@@ -315,6 +328,30 @@ impl Config {
                 Yaml::Hash(hash)
             }
         })
+    }
+
+    // Merge two objects.
+    fn merge_objects(to: &mut Value, from: &Value) {
+        match from {
+            Value::Array(from) => {
+                if let Value::Array(to) = to {
+                    to.append(&mut from.clone());
+                }
+            }
+            Value::Bool(n) => *to = Value::Bool(*n),
+            Value::Number(n) => *to = Value::Number(n.clone()),
+            Value::Object(from) => {
+                for key in from.keys() {
+                    if to[key].is_null() {
+                        to[key] = from[key].clone();
+                    } else {
+                        Self::merge_objects(&mut to[key], &from[key]);
+                    }
+                }
+            }
+            Value::String(s) => *to = Value::String(s.clone()),
+            _ => (),
+        }
     }
 
     // Convert YAML to JSON

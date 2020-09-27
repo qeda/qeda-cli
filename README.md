@@ -30,6 +30,7 @@ What's new:
 - [ ] More powerful land pattern generator for non-standard patterns
 - [ ] 3D-models generation in STEP format
 - [x] Multithreading support
+- [ ] Linux: Advanced shell completion
 
 ## Roadmap
 

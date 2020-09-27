@@ -2,11 +2,11 @@
 extern crate bitflags;
 
 #[macro_use]
-mod log;
-mod cli;
+mod macros;
 
 #[macro_use]
-mod macros;
+mod log;
+mod cli;
 
 pub mod config;
 pub mod drawing;

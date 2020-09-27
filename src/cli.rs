@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
+use serde_json::{Number, Value};
 
 use crate::config::Config;
 use crate::error::*;
@@ -11,10 +12,10 @@ const QEDA_YML: &str = ".qeda.yml";
 
 const QEDA_EXAMPLES: &str = r"EXAMPLES:
     qeda reset
-    qeda add ti/iso721
-    qeda power +5V_DC
-    qeda ground GND_DC
-    qeda config output kicad
+    qeda add capacitor/c0603
+    qeda power +5V
+    qeda ground GND
+    qeda config generator.type kicad
     qeda generate mylib";
 
 pub async fn run() -> Result<()> {
@@ -28,7 +29,6 @@ pub async fn run() -> Result<()> {
         ("config", Some(m)) => configure(m)?,
         ("generate", Some(m)) => generate(m).await?,
         ("reset", Some(_)) => reset()?,
-        ("sort", Some(_)) => sort()?,
         ("completion", Some(m)) => get_completion(m)?,
         (_, _) => unreachable!(),
     }
@@ -50,59 +50,95 @@ fn cli() -> App<'static, 'static> {
                 .short("v")
                 .long("verbose")
                 .multiple(true),
-            )
+        )
         .subcommand(
             SubCommand::with_name("add")
                 .about("Add component definition to config (with preloading if necessary)")
-                .arg(Arg::with_name("component").required(true).help("Component name"))
+                .arg(
+                    Arg::with_name("component")
+                        .required(true)
+                        .help("Component name"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("load")
                 .about("Load component definition from global repository")
-                .arg(Arg::with_name("component").required(true).help("Component name"))
+                .arg(
+                    Arg::with_name("component")
+                        .required(true)
+                        .help("Component name"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("test")
                 .about("Generate test library with only one component")
-                .arg(Arg::with_name("component").required(true).help("Component name"))
+                .arg(
+                    Arg::with_name("component")
+                        .required(true)
+                        .help("Component name"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("power")
                 .about("Add power supply symbol to config")
-                .arg(Arg::with_name("net").required(true).help("Power net name"))
+                .arg(Arg::with_name("net").required(true).help("Power net name")),
         )
         .subcommand(
             SubCommand::with_name("ground")
                 .about("Add ground symbol to config")
                 .setting(AppSettings::DeriveDisplayOrder)
                 .arg(Arg::with_name("net").required(true).help("Ground net name"))
-                .arg(Arg::with_name("signal").help("Signal ground (triangle symbol)").short("s").long("signal"))
-                .arg(Arg::with_name("chassis").help("Chassis ground (fork symbol)").short("c").long("chassis"))
-                .arg(Arg::with_name("earth").help("Earth ground (3-lines symbol)").short("e").long("earth"))
+                .arg(
+                    Arg::with_name("signal")
+                        .help("Signal ground (triangle symbol)")
+                        .short("s")
+                        .long("signal"),
+                )
+                .arg(
+                    Arg::with_name("chassis")
+                        .help("Chassis ground (fork symbol)")
+                        .short("c")
+                        .long("chassis"),
+                )
+                .arg(
+                    Arg::with_name("earth")
+                        .help("Earth ground (3-lines symbol)")
+                        .short("e")
+                        .long("earth"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("config")
                 .about("Set/get config parameter")
-                .arg(Arg::with_name("param").required(true).help("Parameter name").takes_value(true))
-                .arg(Arg::with_name("value").help("New value to be set"))
+                .arg(
+                    Arg::with_name("param")
+                        .required(true)
+                        .help("Parameter name")
+                        .takes_value(true),
+                )
+                .arg(Arg::with_name("value").help("New value to be set")),
         )
         .subcommand(
             SubCommand::with_name("generate")
                 .about("Generate library according to config")
-                .arg(Arg::with_name("library").required(true).help("Library name"))
+                .arg(
+                    Arg::with_name("library")
+                        .required(true)
+                        .help("Library name"),
+                ),
         )
         .subcommand(
-            SubCommand::with_name("reset")
-                .about("Delete current config (use with attention!)")
-        )
-        .subcommand(
-            SubCommand::with_name("sort")
-                .about("Sort components and nets in config alphabetically (use with caution due to possible annotation issues)")
+            SubCommand::with_name("reset").about("Delete current config (use with attention!)"),
         )
         .subcommand(
             SubCommand::with_name("completion")
                 .about("Generate completion scripts for your shell")
-                .arg(Arg::with_name("shell").required(true).help("Shell name").possible_values(&Shell::variants()))
+                .arg(
+                    Arg::with_name("shell")
+                        .required(true)
+                        .help("Shell name")
+                        .possible_values(&Shell::variants()),
+                ),
         )
 }
 
@@ -140,7 +176,33 @@ fn add_ground(m: &ArgMatches) -> Result<()> {
 }
 
 fn configure(m: &ArgMatches) -> Result<()> {
-    println!("configure -> {}", m.value_of("param").unwrap());
+    let param = m.value_of("param").unwrap();
+    let value = m.value_of("value");
+
+    let mut config = if !Path::new(QEDA_YML).exists() {
+        Config::new()
+    } else {
+        Config::from_yaml_file(QEDA_YML)?
+    };
+
+    let lib_cfg = load_config!("qeda.yml").merge(&config);
+    let element = lib_cfg
+        .get_element(param)
+        .map_err(|_| QedaError::UnknownConfigParameter(param.to_string()))?;
+
+    if let Some(value) = value {
+        let new_value = match element {
+            Value::String(_) => Value::String(value.to_string()),
+            Value::Number(_) => Value::Number(Number::from_f64(value.parse::<f64>()?).unwrap()),
+            Value::Bool(_) => Value::Bool(value.parse::<bool>()?),
+            _ => bail!(QedaError::UnsupportedConfigParameterType(param.to_string())),
+        };
+        config.insert(param, new_value);
+        config.save(QEDA_YML)?;
+    } else {
+        println!("{}", element);
+    }
+
     Ok(())
 }
 
@@ -163,11 +225,6 @@ fn reset() -> Result<()> {
     } else {
         fs::remove_file(QEDA_YML).with_context(|| "unable to remove")?;
     }
-    Ok(())
-}
-
-fn sort() -> Result<()> {
-    println!("sort");
     Ok(())
 }
 
