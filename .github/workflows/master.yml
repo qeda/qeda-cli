@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -22,9 +22,12 @@ jobs:
 
       - name: Prepare
         run: |
-          sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64 p7zip
+          sudo apt-get update && sudo apt-get install -y llvm libxml2 p7zip
           rustup install nightly && rustup default nightly
+          rustup target add x86_64-apple-darwin
           rustup target add x86_64-pc-windows-gnu
+          wget https://github.com/qeda/ci/releases/download/compiler/compiler.tar.xz
+          sudo tar -xf compiler.tar.xz -C /
           sed -i '1i cargo-features = ["strip"]' Cargo.toml
 
       - name: Build for Linux
@@ -36,6 +39,18 @@ jobs:
           du -h qeda-linux-x86_64-dev.tar.xz
           mkdir -p deploy/dev
           mv -fv qeda-linux-x86_64-dev.tar.xz deploy/dev/
+
+      - name: Build for MacOS
+        run: |
+          mkdir -p .cargo
+          echo -e "[target.x86_64-apple-darwin]\nlinker = \"x86_64-apple-darwin14-clang\"\nar = \"x86_64-apple-darwin14-ar\"\n" > .cargo/config
+          cargo build --target=x86_64-apple-darwin  --release -Z unstable-options -Z config-include --config release.toml
+          mkdir -p qeda-mac-x86_64-dev
+          cp -vf target/x86_64-apple-darwin/release/qeda qeda-mac-x86_64-dev/
+          XZ_OPT=-9 tar cJf qeda-mac-x86_64-dev.tar.xz qeda-mac-x86_64-dev
+          du -h qeda-mac-x86_64-dev.tar.xz
+          mkdir -p deploy/dev
+          mv -fv qeda-mac-x86_64-dev.tar.xz deploy/dev/
 
       - name: Build for Windows
         run: |

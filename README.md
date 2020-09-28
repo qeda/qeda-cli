@@ -12,6 +12,7 @@ QEDA Command Line Interface (CLI) is a tool to simplify creating electronic comp
 ## Download
 
 * Linux development build: https://builds.qeda.org/dev/qeda-linux-x86_64-dev.tar.xz
+* MacOS development build: https://builds.qeda.org/dev/qeda-mac-x86_64-dev.tar.xz
 * Windows development build: https://builds.qeda.org/dev/qeda-windows-x86_64-dev.7z
 
 ## Comparing to the Previous Version
