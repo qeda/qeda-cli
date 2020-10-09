@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       - uses: actions/cache@v2
         with:
@@ -69,5 +67,5 @@ jobs:
           publish_dir: ./deploy
           cname: builds.qeda.org
           force_orphan: true
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
+          user_name: 'qedabot'
+          user_email: 'qedabot@users.noreply.github.com'

@@ -6,6 +6,7 @@ use serde_json::{Number, Value};
 
 use crate::config::Config;
 use crate::error::*;
+use crate::index;
 use crate::library::Library;
 
 const QEDA_YML: &str = ".qeda.yml";
@@ -29,6 +30,7 @@ pub async fn run() -> Result<()> {
         ("config", Some(m)) => configure(m)?,
         ("generate", Some(m)) => generate(m).await?,
         ("reset", Some(_)) => reset()?,
+        ("index", Some(m)) => index(m)?,
         ("completion", Some(m)) => get_completion(m)?,
         (_, _) => unreachable!(),
     }
@@ -131,6 +133,14 @@ fn cli() -> App<'static, 'static> {
             SubCommand::with_name("reset").about("Delete current config (use with attention!)"),
         )
         .subcommand(
+            SubCommand::with_name("index")
+                .about("Generate index for component descriptions")
+                .arg(
+                    Arg::with_name("directory")
+                        .help("Directory with component descriptions to be indexed"),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name("completion")
                 .about("Generate completion scripts for your shell")
                 .arg(
@@ -226,6 +236,14 @@ fn reset() -> Result<()> {
         fs::remove_file(QEDA_YML).with_context(|| "unable to remove")?;
     }
     Ok(())
+}
+
+fn index(m: &ArgMatches) -> Result<()> {
+    info!(
+        "indexing '{}'",
+        m.value_of("directory").unwrap_or("qedalib")
+    );
+    index::generate(m.value_of("directory").unwrap_or("qedalib"))
 }
 
 fn get_completion(m: &ArgMatches) -> Result<()> {

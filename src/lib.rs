@@ -15,6 +15,7 @@ pub mod library;
 mod component;
 mod error;
 mod generators;
+mod index;
 mod packages;
 mod pattern;
 mod pinout;

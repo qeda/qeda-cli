@@ -1,5 +1,7 @@
+.index
 .vscode
 /target
 **/*.rs.bk
 *.step
 *.stp
+lib/
