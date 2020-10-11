@@ -1,14 +1,24 @@
-use std::{env, fmt, fs};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::time::Duration;
+use std::{env, fmt, fs};
 
+use async_recursion::async_recursion;
 use crypto_hash::{Algorithm, Hasher};
+use directories::ProjectDirs;
+use futures::future;
+use tokio::prelude::*;
+use tokio::task;
 
-use crate::error::Result;
+use crate::config::Config;
+use crate::error::*;
+use crate::log::{info_async, warn_async};
 
 const INDEX_DIR: &str = ".index";
+const INDEX_FILE: &str = "index";
+const HASH_FILE: &str = "hash";
 const EXT: &str = ".yml";
 const MAX_ITEM_COUNT: usize = 200;
 
@@ -72,7 +82,7 @@ impl Index {
                 let prev_dir = env::current_dir()?;
                 env::set_current_dir(&i.name)?;
 
-                let mut f = File::create("hash")?;
+                let mut f = File::create(HASH_FILE)?;
                 writeln!(f, "{}", i.hash)?;
 
                 let mut lines: Vec<_> = i
@@ -82,7 +92,7 @@ impl Index {
                     .map(|e| format!("{}", e))
                     .collect();
                 lines.sort();
-                let mut f = File::create("index")?;
+                let mut f = File::create(INDEX_FILE)?;
                 let _ = lines
                     .iter()
                     .map(|s| writeln!(f, "{}", s))
@@ -172,4 +182,88 @@ pub fn generate(dir: &str) -> Result<()> {
         fs::remove_dir_all(INDEX_DIR)?;
     }
     Index::render(&index)
+}
+
+pub async fn update(force: bool, lib_cfg: &Config) -> Result<()> {
+    let proj_dirs =
+        ProjectDirs::from("org", "qeda", "qeda-cli").ok_or(QedaError::UnableToGetProjectDir)?;
+    let cache_dir = proj_dirs.cache_dir();
+
+    info!("cache directory: '{}'", cache_dir.display());
+
+    if force && Path::new(cache_dir).exists() {
+        tokio::fs::remove_dir_all(cache_dir).await?;
+    }
+    if !Path::new(cache_dir).exists() {
+        tokio::fs::create_dir(cache_dir).await?;
+    }
+    env::set_current_dir(cache_dir)?;
+    let mut url = lib_cfg.get_string("base-url")?;
+    if !url.ends_with('/') {
+        url += "/";
+    }
+    let timeout = lib_cfg.get_u64("timeout").unwrap();
+    download(format!("{}/", INDEX_DIR), url, timeout).await
+}
+
+#[async_recursion]
+async fn download(dir: String, url: String, timeout: u64) -> Result<()> {
+    if !Path::new(&dir).exists() {
+        tokio::fs::create_dir_all(&dir).await?;
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(timeout))
+        .build()?;
+
+    let response = client
+        .get(&format!("{}{}{}", url, &dir, HASH_FILE))
+        .send()
+        .await?
+        .error_for_status()?;
+    let hash = response.text().await?;
+
+    let hash_file = format!("{}{}", dir, HASH_FILE);
+    if Path::new(&hash_file).exists() {
+        let local_hash = fs::read_to_string(&hash_file)?;
+        if local_hash == hash {
+            info_async(&format!("  • skip: '{}'", &dir)).await;
+            return Ok(());
+        }
+    }
+
+    info_async(&format!("  • download: '{}'", &dir)).await;
+    let response = client
+        .get(&format!("{}{}{}", url, &dir, INDEX_FILE))
+        .send()
+        .await?
+        .error_for_status()?;
+    let index = response.text().await?;
+
+    let mut f = tokio::fs::File::create(format!("{}{}", dir, INDEX_FILE)).await?;
+    f.write_all(index.as_bytes()).await?;
+
+    let tasks: Vec<_> = index
+        .split('\n')
+        .filter(|s| s.ends_with('/'))
+        .map(|subdir| download(format!("{}{}", &dir, subdir), url.clone(), timeout))
+        .map(task::spawn)
+        .collect();
+
+    let is_err = future::join_all(tasks)
+        .await
+        .into_iter()
+        .any(|r| r.is_err() || r.unwrap().is_err());
+    if !is_err {
+        let mut f = tokio::fs::File::create(format!("{}{}", dir, HASH_FILE)).await?;
+        f.write_all(hash.as_bytes()).await?;
+    } else {
+        warn_async(&format!(
+            "some of index elements hasn't been downloaded: '{}'",
+            &dir
+        ))
+        .await;
+    }
+
+    Ok(())
 }

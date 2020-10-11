@@ -53,6 +53,9 @@ pub enum QedaError {
     #[error("missing element '{0}' in config")]
     MissingElement(String),
 
+    #[error("unable to get the project directory")]
+    UnableToGetProjectDir,
+
     #[error("unknown config parameter: '{0}'")]
     UnknownConfigParameter(String),
 

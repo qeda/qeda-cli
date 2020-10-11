@@ -31,6 +31,7 @@ pub async fn run() -> Result<()> {
         ("generate", Some(m)) => generate(m).await?,
         ("reset", Some(_)) => reset()?,
         ("index", Some(m)) => index(m)?,
+        ("update", Some(m)) => update(m).await?,
         ("completion", Some(m)) => get_completion(m)?,
         (_, _) => unreachable!(),
     }
@@ -55,7 +56,7 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("add")
-                .about("Add component definition to config (with preloading if necessary)")
+                .about("Add a component definition to the config (with preloading if necessary)")
                 .arg(
                     Arg::with_name("component")
                         .required(true)
@@ -64,7 +65,7 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("load")
-                .about("Load component definition from global repository")
+                .about("Load a component definition from the global repository")
                 .arg(
                     Arg::with_name("component")
                         .required(true)
@@ -73,7 +74,7 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("test")
-                .about("Generate test library with only one component")
+                .about("Generate a test library with the only one component")
                 .arg(
                     Arg::with_name("component")
                         .required(true)
@@ -82,12 +83,12 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("power")
-                .about("Add power supply symbol to config")
+                .about("Add power supply symbol to the config")
                 .arg(Arg::with_name("net").required(true).help("Power net name")),
         )
         .subcommand(
             SubCommand::with_name("ground")
-                .about("Add ground symbol to config")
+                .about("Add ground symbol to the config")
                 .setting(AppSettings::DeriveDisplayOrder)
                 .arg(Arg::with_name("net").required(true).help("Ground net name"))
                 .arg(
@@ -122,7 +123,7 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("generate")
-                .about("Generate library according to config")
+                .about("Generate a library according to the config")
                 .arg(
                     Arg::with_name("library")
                         .required(true)
@@ -138,6 +139,16 @@ fn cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("directory")
                         .help("Directory with component descriptions to be indexed"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("update")
+                .about("Update library index from the global repository")
+                .arg(
+                    Arg::with_name("force")
+                        .help("Force to update the index even if it has up-to-date parts")
+                        .short("f")
+                        .long("force"),
                 ),
         )
         .subcommand(
@@ -160,8 +171,7 @@ async fn add_component(m: &ArgMatches<'_>) -> Result<()> {
     Config::create_if_missing(QEDA_YML)?;
     let mut config = Config::from_yaml_file(QEDA_YML)?;
     config.insert_object("components", component_id)?;
-    config.save(QEDA_YML)?;
-    Ok(())
+    config.save(QEDA_YML)
 }
 
 async fn load_component(m: &ArgMatches<'_>) -> Result<()> {
@@ -224,8 +234,7 @@ async fn generate(m: &ArgMatches<'_>) -> Result<()> {
 
     let config = Config::from_yaml_file(QEDA_YML)?;
     let lib = Library::from_config(&config).await?;
-    lib.generate(m.value_of("library").unwrap())?;
-    Ok(())
+    lib.generate(m.value_of("library").unwrap())
 }
 
 fn reset() -> Result<()> {
@@ -244,6 +253,17 @@ fn index(m: &ArgMatches) -> Result<()> {
         m.value_of("directory").unwrap_or("qedalib")
     );
     index::generate(m.value_of("directory").unwrap_or("qedalib"))
+}
+
+async fn update(m: &ArgMatches<'_>) -> Result<()> {
+    info!("updating index");
+    let config = if !Path::new(QEDA_YML).exists() {
+        Config::new()
+    } else {
+        Config::from_yaml_file(QEDA_YML)?
+    };
+    let lib_cfg = load_config!("qeda.yml").merge(&config);
+    index::update(m.is_present("force"), &lib_cfg).await
 }
 
 fn get_completion(m: &ArgMatches) -> Result<()> {

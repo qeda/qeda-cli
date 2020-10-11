@@ -1,4 +1,4 @@
-base-url: https://raw.githubusercontent.com/qeda/lib/master/
+base-url: https://lib.qeda.org/
 timeout: 5 # seconds
 
 symbol:

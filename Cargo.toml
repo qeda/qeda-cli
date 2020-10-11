@@ -15,9 +15,11 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = "1.0"
+async-recursion = "0.3"
 bitflags = "1.2"
 clap = "2.33"
 crypto-hash = "0.3"
+directories = "3.0"
 futures = "0.3"
 hex = "0.4"
 linked-hash-map = "0.5"
