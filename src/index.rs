@@ -20,7 +20,7 @@ const INDEX_DIR: &str = ".index";
 const INDEX_FILE: &str = "index";
 const HASH_FILE: &str = "hash";
 const EXT: &str = ".yml";
-const MAX_ITEM_COUNT: usize = 200;
+const MAX_ITEM_COUNT: usize = 1000;
 
 #[derive(Debug, Default)]
 struct Index {
@@ -206,6 +206,36 @@ pub async fn update(force: bool, lib_cfg: &Config) -> Result<()> {
     download(format!("{}/", INDEX_DIR), url, timeout).await
 }
 
+pub fn list(pat: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let proj_dirs = ProjectDirs::from("org", "qeda", "qeda-cli");
+    if proj_dirs.is_some() {
+        let proj_dirs = proj_dirs.unwrap();
+        let index_dir = format!("{}/{}", proj_dirs.cache_dir().display(), INDEX_DIR);
+        if Path::new(&index_dir).exists() {
+            let mut index = fs::read_to_string(format!("{}/{}", &index_dir, INDEX_FILE))
+                .unwrap_or_else(|_| "".to_string());
+            while index.ends_with('\n') {
+                index.truncate(index.len() - 1);
+            }
+            let prefixes: Vec<_> = index.split('\n').collect();
+            let mut count = MAX_ITEM_COUNT;
+            for prefix in prefixes {
+                if intersects(prefix, pat) {
+                    let mut components =
+                        get_from_index(&format!("{}/{}", &index_dir, prefix), prefix, pat, count);
+                    count -= components.len();
+                    result.append(&mut components);
+                    if count == 0 {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    result
+}
+
 #[async_recursion]
 async fn download(dir: String, url: String, timeout: u64) -> Result<()> {
     if !Path::new(&dir).exists() {
@@ -266,4 +296,44 @@ async fn download(dir: String, url: String, timeout: u64) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn intersects(s1: &str, s2: &str) -> bool {
+    s1.starts_with(s2) || s2.starts_with(s1)
+}
+
+fn get_from_index(path: &str, prefix: &str, pat: &str, max_count: usize) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut index =
+        fs::read_to_string(format!("{}{}", path, INDEX_FILE)).unwrap_or_else(|_| "".to_string());
+    while index.ends_with('\n') {
+        index.truncate(index.len() - 1);
+    }
+    let mut count = max_count;
+    let components: Vec<_> = index.split('\n').collect();
+    for component in components {
+        if component.ends_with('/') {
+            // Group
+            let mut prefix = format!("{}{}", prefix, &component[0..component.len()]);
+            prefix.truncate(prefix.len() - 1);
+            if intersects(&prefix, pat) && count > 0 {
+                let mut childs =
+                    get_from_index(&format!("{}{}", path, component), &prefix, pat, count);
+                count -= childs.len();
+                result.append(&mut childs);
+            }
+        } else {
+            // Component
+            let name = format!("{}{}", prefix, component);
+            if intersects(&name, pat) && count > 0 {
+                result.push(name);
+                count -= 1;
+            }
+        }
+        if count == 0 {
+            break;
+        }
+    }
+
+    result
 }

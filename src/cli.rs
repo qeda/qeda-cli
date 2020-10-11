@@ -32,6 +32,7 @@ pub async fn run() -> Result<()> {
         ("reset", Some(_)) => reset()?,
         ("index", Some(m)) => index(m)?,
         ("update", Some(m)) => update(m).await?,
+        ("list", Some(m)) => list(m)?,
         ("completion", Some(m)) => get_completion(m)?,
         (_, _) => unreachable!(),
     }
@@ -152,6 +153,11 @@ fn cli() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("list")
+                .about("List available components from index (run `qeda update` first)")
+                .arg(Arg::with_name("prefix").help("Component name prefix")),
+        )
+        .subcommand(
             SubCommand::with_name("completion")
                 .about("Generate completion scripts for your shell")
                 .arg(
@@ -264,6 +270,12 @@ async fn update(m: &ArgMatches<'_>) -> Result<()> {
     };
     let lib_cfg = load_config!("qeda.yml").merge(&config);
     index::update(m.is_present("force"), &lib_cfg).await
+}
+
+fn list(m: &ArgMatches) -> Result<()> {
+    let components = index::list(m.value_of("prefix").unwrap_or(""));
+    println!("{}", components.join("\n"));
+    Ok(())
 }
 
 fn get_completion(m: &ArgMatches) -> Result<()> {
