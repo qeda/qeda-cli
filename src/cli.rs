@@ -1,7 +1,8 @@
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::Path;
 
-use clap::{App, AppSettings, Arg, ArgMatches, Shell, SubCommand};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use serde_json::{Number, Value};
 
 use crate::config::Config;
@@ -159,12 +160,12 @@ fn cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("completion")
-                .about("Generate completion scripts for your shell")
+                .about("Generate or install completion scripts for your shell")
                 .arg(
-                    Arg::with_name("shell")
+                    Arg::with_name("subcommand")
                         .required(true)
-                        .help("Shell name")
-                        .possible_values(&Shell::variants()),
+                        .help("Subcommand")
+                        .possible_values(&["install", "bash"]),
                 ),
         )
 }
@@ -274,11 +275,53 @@ async fn update(m: &ArgMatches<'_>) -> Result<()> {
 
 fn list(m: &ArgMatches) -> Result<()> {
     let components = index::list(m.value_of("prefix").unwrap_or(""));
-    println!("{}", components.join("\n"));
+    let _: Vec<_> = components.into_iter().map(|s| println!("{}", s)).collect();
+    Ok(())
+}
+
+fn install_completion_linux(sh: &str, dir: &str, script: &str) -> Result<()> {
+    info!("{} completion directory found: '{}'", sh, dir);
+    let script_path = format!("{}/qeda", dir);
+    let mut f = File::create(&script_path)
+        .with_context(|| "cannot create completion script, consider using `sudo`")?;
+    writeln!(f, "{}", script)
+        .with_context(|| "cannot write completion script, consider using `sudo`")?;
+    info!("{} completion script installed: '{}'", sh, &script_path);
+    info!("run for this shell session: 'source {}'", &script_path);
     Ok(())
 }
 
 fn get_completion(m: &ArgMatches) -> Result<()> {
-    println!("get_completion -> {}", m.value_of("shell").unwrap());
+    match m.value_of("subcommand").unwrap() {
+        "bash" => print!("{}", include_str!("completion.bash")),
+        "install" => {
+            if cfg!(target_os = "linux") {
+                let bash_dirs = vec![
+                    "/usr/share/bash-completion/completions",
+                    "/etc/bash_completion.d",
+                ];
+                for dir in bash_dirs {
+                    if Path::new(dir).is_dir() {
+                        return install_completion_linux(
+                            "bash",
+                            dir,
+                            include_str!("completion.bash"),
+                        );
+                    }
+                }
+            }
+
+            if cfg!(target_os = "macos") {
+                // Find bash completion scripts directory
+                warn!("not implemented yet");
+            }
+
+            if cfg!(target_os = "windows") {
+                // TODO: Install PowerShell completion script
+                warn!("not implemented yet");
+            }
+        }
+        _ => (),
+    }
     Ok(())
 }

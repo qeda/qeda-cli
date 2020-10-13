@@ -208,9 +208,7 @@ pub async fn update(force: bool, lib_cfg: &Config) -> Result<()> {
 
 pub fn list(pat: &str) -> Vec<String> {
     let mut result = Vec::new();
-    let proj_dirs = ProjectDirs::from("org", "qeda", "qeda-cli");
-    if proj_dirs.is_some() {
-        let proj_dirs = proj_dirs.unwrap();
+    if let Some(proj_dirs) = ProjectDirs::from("org", "qeda", "qeda-cli") {
         let index_dir = format!("{}/{}", proj_dirs.cache_dir().display(), INDEX_DIR);
         if Path::new(&index_dir).exists() {
             let mut index = fs::read_to_string(format!("{}/{}", &index_dir, INDEX_FILE))
