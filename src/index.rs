@@ -20,7 +20,6 @@ const INDEX_DIR: &str = ".index";
 const INDEX_FILE: &str = "index";
 const HASH_FILE: &str = "hash";
 const EXT: &str = ".yml";
-const MAX_ITEM_COUNT: usize = 1000;
 
 #[derive(Debug, Default)]
 struct Index {
@@ -69,8 +68,8 @@ impl Index {
     }
 
     /// Returns an `Index` with items packed into groups.
-    pub fn packed(name: String, items: Vec<String>) -> Self {
-        let items = Self::pack(items, 0);
+    pub fn packed(name: String, items: Vec<String>, max_count: usize) -> Self {
+        let items = Self::pack(items, 0, max_count);
         Self::new(name, items)
     }
 
@@ -108,7 +107,7 @@ impl Index {
         Ok(())
     }
 
-    fn pack(items: Vec<String>, level: usize) -> Vec<Entry> {
+    fn pack(items: Vec<String>, level: usize, max_count: usize) -> Vec<Entry> {
         let mut len = items.len();
         let mut result = Vec::new();
 
@@ -124,12 +123,12 @@ impl Index {
 
         for (key, group) in groups {
             let group_len = group.len();
-            if len <= MAX_ITEM_COUNT || group_len == 1 {
+            if len <= max_count || group_len == 1 {
                 result.append(&mut group.into_iter().map(Entry::Item).collect::<Vec<_>>());
             } else {
                 result.push(Entry::Group(Index::new(
                     key.to_string(),
-                    Self::pack(group, level + 1),
+                    Self::pack(group, level + 1, max_count),
                 )));
             }
             len -= group_len - 1;
@@ -151,7 +150,7 @@ impl Index {
     }
 }
 
-pub fn generate(dir: &str) -> Result<()> {
+pub fn generate(dir: &str, max_count: usize) -> Result<()> {
     env::set_current_dir(dir)?;
     let subdirs: Vec<_> = fs::read_dir("./")?
         .filter_map(|res| res.map(|ent| ent.path()).ok())
@@ -174,7 +173,7 @@ pub fn generate(dir: &str) -> Result<()> {
                 file
             })
             .collect();
-        entries.push(Entry::Group(Index::packed(subdir, files)));
+        entries.push(Entry::Group(Index::packed(subdir, files, max_count)));
     }
 
     let index = Entry::Group(Index::new(INDEX_DIR.to_string(), entries));
@@ -206,7 +205,7 @@ pub async fn update(force: bool, lib_cfg: &Config) -> Result<()> {
     download(format!("{}/", INDEX_DIR), url, timeout).await
 }
 
-pub fn list(pat: &str) -> Vec<String> {
+pub fn list(pat: &str, max_count: usize) -> Vec<String> {
     let mut result = Vec::new();
     if let Some(proj_dirs) = ProjectDirs::from("org", "qeda", "qeda-cli") {
         let index_dir = format!("{}/{}", proj_dirs.cache_dir().display(), INDEX_DIR);
@@ -217,7 +216,7 @@ pub fn list(pat: &str) -> Vec<String> {
                 index.truncate(index.len() - 1);
             }
             let prefixes: Vec<_> = index.split('\n').collect();
-            let mut count = MAX_ITEM_COUNT;
+            let mut count = max_count;
             for prefix in prefixes {
                 if intersects(prefix, pat) {
                     let mut components =
@@ -312,8 +311,6 @@ fn get_from_index(path: &str, prefix: &str, pat: &str, max_count: usize) -> Vec<
     for component in components {
         if component.ends_with('/') {
             // Group
-            let mut prefix = format!("{}{}", prefix, &component[0..component.len()]);
-            prefix.truncate(prefix.len() - 1);
             if intersects(&prefix, pat) && count > 0 {
                 let mut childs =
                     get_from_index(&format!("{}{}", path, component), &prefix, pat, count);
@@ -323,7 +320,7 @@ fn get_from_index(path: &str, prefix: &str, pat: &str, max_count: usize) -> Vec<
         } else {
             // Component
             let name = format!("{}{}", prefix, component);
-            if intersects(&name, pat) && count > 0 {
+            if name.starts_with(pat) && count > 0 {
                 result.push(name);
                 count -= 1;
             }

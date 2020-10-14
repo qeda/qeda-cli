@@ -18,6 +18,9 @@ macro_rules! errln {
 macro_rules! info {
     ( $ ( $ arg : tt ) * ) => ( $crate::log::info_fmt ( format_args ! ( $ ( $ arg ) * ) ) )
 }
+macro_rules! infoln {
+    ( $ ( $ arg : tt ) * ) => ( $crate::log::infoln_fmt ( format_args ! ( $ ( $ arg ) * ) ) )
+}
 macro_rules! debug {
     ( $ ( $ arg : tt ) * ) => ( $crate::log::debug_fmt ( format_args ! ( $ ( $ arg ) * ) ) )
 }
@@ -44,6 +47,10 @@ pub async fn info_async(message: &str) {
 
 pub fn info_fmt(args: fmt::Arguments<'_>) {
     text_fmt("info: ", Color::Green, args);
+}
+
+pub fn infoln_fmt(args: fmt::Arguments<'_>) {
+    text_fmt("|      ", Color::Green, args);
 }
 
 pub fn debug_fmt(args: fmt::Arguments<'_>) {

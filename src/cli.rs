@@ -1,10 +1,10 @@
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{App, AppSettings, ArgGroup, ArgMatches};
 use serde_json::{Number, Value};
 
+use crate::completion;
 use crate::config::Config;
 use crate::error::*;
 use crate::index;
@@ -20,159 +20,130 @@ const QEDA_EXAMPLES: &str = r"EXAMPLES:
     qeda config generator.type kicad
     qeda generate mylib";
 
+const GROUND_DETAILS: &str = r"DETAILS:
+    Signal Ground:
+        __|__
+        \   /
+         \ /
+
+    Chassis Ground:
+        __|__
+        \ \ \
+
+    Earth Ground:
+        __|__
+         ___
+          _";
+
+const MAX_INDEX_COUNT: usize = 512;
+const MAX_LIST_COUNT: usize = 4096;
+
 pub async fn run() -> Result<()> {
     let matches = cli().get_matches();
     match matches.subcommand() {
-        ("add", Some(m)) => add_component(m).await?,
-        ("load", Some(m)) => load_component(m).await?,
-        ("test", Some(m)) => test_component(m)?,
-        ("power", Some(m)) => add_power(m)?,
-        ("ground", Some(m)) => add_ground(m)?,
-        ("config", Some(m)) => configure(m)?,
-        ("generate", Some(m)) => generate(m).await?,
-        ("reset", Some(_)) => reset()?,
-        ("index", Some(m)) => index(m)?,
-        ("update", Some(m)) => update(m).await?,
-        ("list", Some(m)) => list(m)?,
-        ("completion", Some(m)) => get_completion(m)?,
-        (_, _) => unreachable!(),
+        Some(("add", m)) => add_component(m).await?,
+        Some(("load", m)) => load_component(m).await?,
+        Some(("test", m)) => test_component(m)?,
+        Some(("power", m)) => add_power(m)?,
+        Some(("ground", m)) => add_ground(m)?,
+        Some(("config", m)) => configure(m)?,
+        Some(("generate", m)) => generate(m).await?,
+        Some(("reset", _)) => reset()?,
+        Some(("index", m)) => index(m)?,
+        Some(("update", m)) => update(m).await?,
+        Some(("list", m)) => list(m)?,
+        Some(("completion", m)) => get_completion(m)?,
+        _ => unreachable!(),
     }
     Ok(())
 }
 
-fn cli() -> App<'static, 'static> {
+fn cli() -> App<'static> {
     App::new("qeda")
-        .version(env!("CARGO_PKG_VERSION"))
+        .version(crate_version!())
         .about("Tool for creating electronic component libraries")
         .after_help(QEDA_EXAMPLES)
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::DeriveDisplayOrder)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .setting(AppSettings::ColorAuto)
-        .arg(
-            Arg::with_name("verbose")
-                .help("Enable verbose output")
-                .short("v")
-                .long("verbose")
-                .multiple(true),
-        )
         .subcommand(
-            SubCommand::with_name("add")
+            App::new("add")
                 .about("Add a component definition to the config (with preloading if necessary)")
-                .arg(
-                    Arg::with_name("component")
-                        .required(true)
-                        .help("Component name"),
-                ),
+                .arg("<COMPONENT> 'Component name'")
         )
         .subcommand(
-            SubCommand::with_name("load")
+            App::new("load")
                 .about("Load a component definition from the global repository")
-                .arg(
-                    Arg::with_name("component")
-                        .required(true)
-                        .help("Component name"),
-                ),
+                .arg("<COMPONENT> 'Component name'"),
         )
         .subcommand(
-            SubCommand::with_name("test")
+            App::new("test")
                 .about("Generate a test library with the only one component")
-                .arg(
-                    Arg::with_name("component")
-                        .required(true)
-                        .help("Component name"),
-                ),
+                .arg("<COMPONENT> 'Component name'"),
         )
         .subcommand(
-            SubCommand::with_name("power")
+            App::new("power")
                 .about("Add power supply symbol to the config")
-                .arg(Arg::with_name("net").required(true).help("Power net name")),
+                .arg("<NET> 'Power net name'"),
         )
         .subcommand(
-            SubCommand::with_name("ground")
+            App::new("ground")
                 .about("Add ground symbol to the config")
                 .setting(AppSettings::DeriveDisplayOrder)
-                .arg(Arg::with_name("net").required(true).help("Ground net name"))
-                .arg(
-                    Arg::with_name("signal")
-                        .help("Signal ground (triangle symbol)")
-                        .short("s")
-                        .long("signal"),
-                )
-                .arg(
-                    Arg::with_name("chassis")
-                        .help("Chassis ground (fork symbol)")
-                        .short("c")
-                        .long("chassis"),
-                )
-                .arg(
-                    Arg::with_name("earth")
-                        .help("Earth ground (3-lines symbol)")
-                        .short("e")
-                        .long("earth"),
-                ),
+                .arg("<NET> 'Ground net name'")
+                .arg("-s, --signal  'Signal ground (triangle symbol)'")
+                .arg("-c, --chassis 'Chassis ground (fork symbol)'")
+                .arg("-e, --earth   'Earth ground (3-lines symbol)'")
+                .group(ArgGroup::new("ground-type").args(&["signal", "chassis", "earth"]))
+                .after_help(GROUND_DETAILS),
         )
         .subcommand(
-            SubCommand::with_name("config")
-                .about("Set/get config parameter")
-                .arg(
-                    Arg::with_name("param")
-                        .required(true)
-                        .help("Parameter name")
-                        .takes_value(true),
-                )
-                .arg(Arg::with_name("value").help("New value to be set")),
+            App::new("config")
+                .about("Set/get/list config parameter(s)")
+                .arg("-l, --list 'List available config parameters'")
+                .arg("[PARAM] 'Parameter name'")
+                .group(ArgGroup::new("config-subcommand").args(&["PARAM", "list"]).required(true))
+                .arg("[VALUE] 'New value to be set'"),
         )
         .subcommand(
-            SubCommand::with_name("generate")
+            App::new("generate")
                 .about("Generate a library according to the config")
-                .arg(
-                    Arg::with_name("library")
-                        .required(true)
-                        .help("Library name"),
-                ),
+                .arg("<LIBRARY> 'Library name'"),
         )
+        .subcommand(App::new("reset").about("Delete current config (use with attention!)"))
         .subcommand(
-            SubCommand::with_name("reset").about("Delete current config (use with attention!)"),
-        )
-        .subcommand(
-            SubCommand::with_name("index")
+            App::new("index")
                 .about("Generate index for component descriptions")
-                .arg(
-                    Arg::with_name("directory")
-                        .help("Directory with component descriptions to be indexed"),
-                ),
+                .arg("[DIR] 'Directory with component descriptions to be indexed (\'qedalib\' by default)'")
+                .arg("-m, --max=[COUNT] 'Maximum component count in one index file (512 by default)'"), // TODO: Use MAX_INDEX_COUNT
         )
         .subcommand(
-            SubCommand::with_name("update")
+            App::new("update")
                 .about("Update library index from the global repository")
-                .arg(
-                    Arg::with_name("force")
-                        .help("Force to update the index even if it has up-to-date parts")
-                        .short("f")
-                        .long("force"),
-                ),
+                .arg("-f, --force 'Force to update the index even if it has up-to-date parts'"),
         )
         .subcommand(
-            SubCommand::with_name("list")
-                .about("List available components from index (run `qeda update` first)")
-                .arg(Arg::with_name("prefix").help("Component name prefix")),
+            App::new("list")
+                .about("List available components from index (run 'qeda update' first)")
+                .arg("[PREFIX] 'Component name prefix'")
+                .arg("-m, --max=[COUNT] 'Maximum listed component count (4096 by default)'"), // TODO: Use MAX_LIST_COUNT
         )
         .subcommand(
-            SubCommand::with_name("completion")
+            App::new("completion")
                 .about("Generate or install completion scripts for your shell")
-                .arg(
-                    Arg::with_name("subcommand")
-                        .required(true)
-                        .help("Subcommand")
-                        .possible_values(&["install", "bash"]),
-                ),
+                .arg("-i, --install 'Install completion scripts to standard paths'")
+                .arg("-b, --bash 'Show completion script for Bash'")
+                .arg("-w, --words=[WORDS] 'Command words'")
+                .arg("-c, --current=[WORD] 'Current word number'")
+                .arg("-m, --max=[COUNT] 'Maximum listed component count (4096 by default)'") // TODO: Use MAX_LIST_COUNT
+                .group(ArgGroup::new("completion-flag").args(&["install", "bash", "words"]).required(true)),
         )
 }
 
-async fn add_component(m: &ArgMatches<'_>) -> Result<()> {
+async fn add_component(m: &ArgMatches) -> Result<()> {
     let mut lib = Library::new();
-    let component_id = m.value_of("component").unwrap();
+    let component_id = m.value_of("COMPONENT").unwrap();
     lib.add_component(component_id).await?;
 
     Config::create_if_missing(QEDA_YML)?;
@@ -181,31 +152,28 @@ async fn add_component(m: &ArgMatches<'_>) -> Result<()> {
     config.save(QEDA_YML)
 }
 
-async fn load_component(m: &ArgMatches<'_>) -> Result<()> {
+async fn load_component(m: &ArgMatches) -> Result<()> {
     let lib = Library::new();
-    lib.load_component(m.value_of("component").unwrap()).await?;
+    lib.load_component(m.value_of("COMPONENT").unwrap()).await?;
     Ok(())
 }
 
 fn test_component(m: &ArgMatches) -> Result<()> {
-    println!("test_component -> {}", m.value_of("component").unwrap());
+    println!("test_component -> {}", m.value_of("COMPONENT").unwrap());
     Ok(())
 }
 
 fn add_power(m: &ArgMatches) -> Result<()> {
-    println!("add_power -> {}", m.value_of("net").unwrap());
+    println!("add_power -> {}", m.value_of("NET").unwrap());
     Ok(())
 }
 
 fn add_ground(m: &ArgMatches) -> Result<()> {
-    println!("add_ground -> {}", m.value_of("net").unwrap());
+    println!("add_ground -> {}", m.value_of("NET").unwrap());
     Ok(())
 }
 
 fn configure(m: &ArgMatches) -> Result<()> {
-    let param = m.value_of("param").unwrap();
-    let value = m.value_of("value");
-
     let mut config = if !Path::new(QEDA_YML).exists() {
         Config::new()
     } else {
@@ -213,27 +181,34 @@ fn configure(m: &ArgMatches) -> Result<()> {
     };
 
     let lib_cfg = load_config!("qeda.yml").merge(&config);
-    let element = lib_cfg
-        .get_element(param)
-        .map_err(|_| QedaError::UnknownConfigParameter(param.to_string()))?;
-
-    if let Some(value) = value {
-        let new_value = match element {
-            Value::String(_) => Value::String(value.to_string()),
-            Value::Number(_) => Value::Number(Number::from_f64(value.parse::<f64>()?).unwrap()),
-            Value::Bool(_) => Value::Bool(value.parse::<bool>()?),
-            _ => bail!(QedaError::UnsupportedConfigParameterType(param.to_string())),
-        };
-        config.insert(param, new_value);
-        config.save(QEDA_YML)?;
+    if m.is_present("list") {
+        let params = lib_cfg.keys();
+        let _: Vec<_> = params.into_iter().map(|s| println!("{}", s)).collect();
     } else {
-        println!("{}", element);
+        let param = m.value_of("PARAM").unwrap();
+        let value = m.value_of("VALUE");
+        let element = lib_cfg
+            .get_element(param)
+            .map_err(|_| QedaError::UnknownConfigParameter(param.to_string()))?;
+
+        if let Some(value) = value {
+            let new_value = match element {
+                Value::String(_) => Value::String(value.to_string()),
+                Value::Number(_) => Value::Number(Number::from_f64(value.parse::<f64>()?).unwrap()),
+                Value::Bool(_) => Value::Bool(value.parse::<bool>()?),
+                _ => bail!(QedaError::UnsupportedConfigParameterType(param.to_string())),
+            };
+            config.insert(param, new_value);
+            config.save(QEDA_YML)?;
+        } else {
+            println!("{}", element);
+        }
     }
 
     Ok(())
 }
 
-async fn generate(m: &ArgMatches<'_>) -> Result<()> {
+async fn generate(m: &ArgMatches) -> Result<()> {
     ensure!(
         Path::new(QEDA_YML).exists(),
         QedaError::MissingConfigFile(QEDA_YML.to_string())
@@ -241,7 +216,7 @@ async fn generate(m: &ArgMatches<'_>) -> Result<()> {
 
     let config = Config::from_yaml_file(QEDA_YML)?;
     let lib = Library::from_config(&config).await?;
-    lib.generate(m.value_of("library").unwrap())
+    lib.generate(m.value_of("LIBRARY").unwrap())
 }
 
 fn reset() -> Result<()> {
@@ -255,14 +230,16 @@ fn reset() -> Result<()> {
 }
 
 fn index(m: &ArgMatches) -> Result<()> {
-    info!(
-        "indexing '{}'",
-        m.value_of("directory").unwrap_or("qedalib")
-    );
-    index::generate(m.value_of("directory").unwrap_or("qedalib"))
+    let max_count = m
+        .value_of("max")
+        .unwrap_or(&MAX_INDEX_COUNT.to_string())
+        .parse::<usize>()?;
+    let dir = m.value_of("DIR").unwrap_or("qedalib");
+    info!("indexing '{}' (max {} records per index)", dir, max_count);
+    index::generate(dir, max_count)
 }
 
-async fn update(m: &ArgMatches<'_>) -> Result<()> {
+async fn update(m: &ArgMatches) -> Result<()> {
     info!("updating index");
     let config = if !Path::new(QEDA_YML).exists() {
         Config::new()
@@ -274,54 +251,28 @@ async fn update(m: &ArgMatches<'_>) -> Result<()> {
 }
 
 fn list(m: &ArgMatches) -> Result<()> {
-    let components = index::list(m.value_of("prefix").unwrap_or(""));
+    let max_count = m
+        .value_of("max")
+        .unwrap_or(&MAX_LIST_COUNT.to_string())
+        .parse::<usize>()?;
+    let components = index::list(m.value_of("PREFIX").unwrap_or(""), max_count);
     let _: Vec<_> = components.into_iter().map(|s| println!("{}", s)).collect();
     Ok(())
 }
 
-fn install_completion_linux(sh: &str, dir: &str, script: &str) -> Result<()> {
-    info!("{} completion directory found: '{}'", sh, dir);
-    let script_path = format!("{}/qeda", dir);
-    let mut f = File::create(&script_path)
-        .with_context(|| "cannot create completion script, consider using `sudo`")?;
-    writeln!(f, "{}", script)
-        .with_context(|| "cannot write completion script, consider using `sudo`")?;
-    info!("{} completion script installed: '{}'", sh, &script_path);
-    info!("run for this shell session: 'source {}'", &script_path);
-    Ok(())
-}
-
 fn get_completion(m: &ArgMatches) -> Result<()> {
-    match m.value_of("subcommand").unwrap() {
-        "bash" => print!("{}", include_str!("completion.bash")),
-        "install" => {
-            if cfg!(target_os = "linux") {
-                let bash_dirs = vec![
-                    "/usr/share/bash-completion/completions",
-                    "/etc/bash_completion.d",
-                ];
-                for dir in bash_dirs {
-                    if Path::new(dir).is_dir() {
-                        return install_completion_linux(
-                            "bash",
-                            dir,
-                            include_str!("completion.bash"),
-                        );
-                    }
-                }
-            }
-
-            if cfg!(target_os = "macos") {
-                // Find bash completion scripts directory
-                warn!("not implemented yet");
-            }
-
-            if cfg!(target_os = "windows") {
-                // TODO: Install PowerShell completion script
-                warn!("not implemented yet");
-            }
-        }
-        _ => (),
+    if m.is_present("bash") {
+        print!("{}", completion::bash_script());
+    } else if m.is_present("install") {
+        completion::install()?;
+    } else if let Some(words) = m.value_of("words") {
+        let current = m.value_of("current").unwrap_or("0").parse::<usize>()?;
+        let max_count = m
+            .value_of("max")
+            .unwrap_or(&MAX_LIST_COUNT.to_string())
+            .parse::<usize>()?;
+        let words = completion::words(words, current, max_count);
+        let _: Vec<_> = words.into_iter().map(|s| println!("{}", s)).collect();
     }
     Ok(())
 }

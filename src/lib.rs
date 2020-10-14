@@ -2,6 +2,9 @@
 extern crate bitflags;
 
 #[macro_use]
+extern crate clap;
+
+#[macro_use]
 mod macros;
 
 #[macro_use]
@@ -12,6 +15,7 @@ pub mod config;
 pub mod drawing;
 pub mod library;
 
+mod completion;
 mod component;
 mod error;
 mod generators;

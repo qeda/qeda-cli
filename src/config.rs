@@ -289,6 +289,18 @@ impl Config {
         Ok(())
     }
 
+    /// Returns all keys separated by dot and sorted alphabetically.
+    pub fn keys(&self) -> Vec<String> {
+        let mut result = Vec::new();
+        if let Value::Object(o) = &self.json {
+            for (k, v) in o {
+                result.append(&mut Self::collect_keys(k, v));
+            }
+        }
+        result.sort();
+        result
+    }
+
     /// Merges the `Config`with another.
     pub fn merge(mut self, with: &Config) -> Self {
         Self::merge_objects(&mut self.json, &with.json);
@@ -304,6 +316,25 @@ impl Config {
         emitter.dump(&yaml)?;
         fs::write(path, yaml_string.as_bytes())?;
         Ok(())
+    }
+
+    // Find all objects and return their keys separated by dot
+    fn collect_keys(prefix: &str, value: &Value) -> Vec<String> {
+        let mut result = Vec::new();
+
+        match value {
+            Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
+                result.push(prefix.to_string())
+            }
+            Value::Object(o) => {
+                for (k, v) in o {
+                    result.append(&mut Self::collect_keys(&format!("{}.{}", prefix, k), &v));
+                }
+            }
+            _ => (),
+        }
+
+        result
     }
 
     // Convert JSON to YAML
