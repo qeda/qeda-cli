@@ -20,22 +20,22 @@ jobs:
 
       - name: Prepare
         run: |
-          sudo apt-get update && sudo apt-get install -y llvm libxml2 p7zip
+          sudo apt-get update && sudo apt-get install -y llvm libxml2 p7zip-full
           rustup install nightly && rustup default nightly
           rustup target add x86_64-apple-darwin
           rustup target add x86_64-pc-windows-gnu
           wget https://github.com/qeda/ci/releases/download/compiler/compiler.tar.xz
           sudo tar -xf compiler.tar.xz -C /
           sed -i '1i cargo-features = ["strip"]' Cargo.toml
+          mkdir -p deploy/dev
 
       - name: Build for Linux
         run: |
           cargo build --release -Z unstable-options -Z config-include --config release.toml
           mkdir -p qeda-linux-x86_64-dev
-          cp -vf target/release/qeda qeda-linux-x86_64-dev/
+          cp -fv target/release/qeda qeda-linux-x86_64-dev/
           XZ_OPT=-9 tar cJf qeda-linux-x86_64-dev.tar.xz qeda-linux-x86_64-dev
           du -h qeda-linux-x86_64-dev.tar.xz
-          mkdir -p deploy/dev
           mv -fv qeda-linux-x86_64-dev.tar.xz deploy/dev/
 
       - name: Build for MacOS
@@ -44,21 +44,25 @@ jobs:
           echo -e "[target.x86_64-apple-darwin]\nlinker = \"x86_64-apple-darwin14-clang\"\nar = \"x86_64-apple-darwin14-ar\"\n" > .cargo/config
           cargo build --target=x86_64-apple-darwin  --release -Z unstable-options -Z config-include --config release.toml
           mkdir -p qeda-mac-x86_64-dev
-          cp -vf target/x86_64-apple-darwin/release/qeda qeda-mac-x86_64-dev/
+          cp -fv target/x86_64-apple-darwin/release/qeda qeda-mac-x86_64-dev/
           XZ_OPT=-9 tar cJf qeda-mac-x86_64-dev.tar.xz qeda-mac-x86_64-dev
           du -h qeda-mac-x86_64-dev.tar.xz
-          mkdir -p deploy/dev
           mv -fv qeda-mac-x86_64-dev.tar.xz deploy/dev/
 
       - name: Build for Windows
         run: |
           cargo build --target=x86_64-pc-windows-gnu --release -Z unstable-options -Z config-include --config release.toml
           mkdir -p qeda-windows-x86_64-dev
-          cp -vf target/x86_64-pc-windows-gnu/release/qeda.exe qeda-windows-x86_64-dev/
+          cp -fv target/x86_64-pc-windows-gnu/release/qeda.exe qeda-windows-x86_64-dev/
           7z a -t7z -mx=9 qeda-windows-x86_64-dev.7z qeda-windows-x86_64-dev
           du -h qeda-windows-x86_64-dev.7z
-          mkdir -p deploy/dev
           mv -fv qeda-windows-x86_64-dev.7z deploy/dev/
+          echo Create SFX
+          wget -nc https://github.com/qeda/pkg/releases/download/win/7zConWin.sfx
+          cp -fv qeda-windows-x86_64-dev/qeda.exe ./
+          7z a -t7z -sfx7zConWin.sfx -mx=9 qeda-windows-x86_64-dev.exe qeda.exe
+          du -h qeda-windows-x86_64-dev.exe
+          mv -fv qeda-windows-x86_64-dev.exe deploy/dev/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    rm -fv "/usr/share/bash-completion/qeda" "/etc/bash_completion.d/qeda"
+fi
