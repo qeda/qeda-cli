@@ -15,7 +15,7 @@ impl fmt::Display for PadShape {
         match self {
             PadShape::Circle => write!(f, "circle"),
             PadShape::Rect => write!(f, "rect"),
-            PadShape::RoundRect => write!(f, "ruondrect"),
+            PadShape::RoundRect => write!(f, "roundrect"),
         }
     }
 }
@@ -76,7 +76,8 @@ impl fmt::Display for Layer {
 }
 
 impl KicadFootprints {
-    pub fn render(self, components: &[Component], _lib_cfg: &Config) -> Result<()> {
+    /// Renders footprints.
+    pub fn render(self, components: &[Component]) -> Result<()> {
         for component in components {
             let name = &component.name;
             let pattern = &component.pattern;
@@ -139,5 +140,11 @@ impl KicadFootprints {
             writeln!(f, ")")?;
         }
         Ok(())
+    }
+
+    /// Builds a `KicadFootprints` with applied settings from `Config`.
+    pub fn settings(self, _lib_cfg: &Config) -> Self {
+        // TODO: Use settings
+        self
     }
 }

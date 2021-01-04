@@ -1,6 +1,7 @@
 mod kicad;
 mod kicad_footprints;
 mod kicad_symbols;
+mod kicad_symbols_legacy;
 
 use std::collections::HashMap;
 

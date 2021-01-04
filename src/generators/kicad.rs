@@ -9,6 +9,7 @@ use crate::library::Library;
 
 use super::kicad_footprints::KicadFootprints;
 use super::kicad_symbols::KicadSymbols;
+use super::kicad_symbols_legacy::KicadSymbolsLegacy;
 
 const KICADLIB_DIR: &str = "kicadlib";
 
@@ -34,9 +35,15 @@ impl GeneratorHandler for KicadGenerator {
             })
             .collect();
 
-        info!("rendering KiCad symbol library: '{}.lib'", name);
+        // TODO: Remove when obsolete
+        info!("rendering legacy KiCad symbol library: '{}.lib'", name);
         fs::create_dir_all(KICADLIB_DIR)?;
         env::set_current_dir(KICADLIB_DIR)?;
+        KicadSymbolsLegacy::new(name)
+            .settings(&config)
+            .render(&components)?;
+
+        info!("rendering KiCad symbol library: '{}.kicad_sym'", name);
         KicadSymbols::new(name)
             .settings(&config)
             .render(&components)?;
@@ -45,7 +52,9 @@ impl GeneratorHandler for KicadGenerator {
         let pattern_dir = format!("{}.pretty", name);
         fs::create_dir_all(&pattern_dir)?;
         env::set_current_dir(&pattern_dir)?;
-        KicadFootprints::default().render(&components, &config)?;
+        KicadFootprints::default()
+            .settings(&config)
+            .render(&components)?;
         env::set_current_dir(env::current_dir()?.parent().unwrap())?;
 
         info!("rendering KiCad 3D library: '{}.3dshapes'", name);

@@ -9,7 +9,7 @@ use async_recursion::async_recursion;
 use crypto_hash::{Algorithm, Hasher};
 use directories::ProjectDirs;
 use futures::future;
-use tokio::prelude::*;
+use tokio::io::AsyncWriteExt;
 use tokio::task;
 
 use crate::config::Config;
