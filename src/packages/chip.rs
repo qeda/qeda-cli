@@ -9,7 +9,7 @@ pub struct ChipPackage {}
 
 impl ChipPackage {
     pub fn new() -> Self {
-        ChipPackage {}
+        Self {}
     }
 }
 

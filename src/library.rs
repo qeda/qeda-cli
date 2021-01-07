@@ -7,6 +7,7 @@ use crate::component::Component;
 use crate::config::Config;
 use crate::error::*;
 use crate::generators::Generators;
+use crate::outlines::Outlines;
 use crate::packages::Packages;
 use crate::symbols::Symbols;
 
@@ -16,10 +17,11 @@ const YAML_SUFFIX: &str = ".yml";
 
 #[derive(Debug)]
 pub struct Library {
-    pub components: Vec<Component>,
     pub config: Config,
     pub symbols: Symbols,
+    pub outlines: Outlines,
     pub packages: Packages,
+    pub components: Vec<Component>,
 }
 
 impl Library {
@@ -33,9 +35,10 @@ impl Library {
     /// let lib = Library::new();
     /// ```
     pub fn new() -> Self {
-        Library {
+        Self {
             config: load_config!("qeda.yml"),
             symbols: Symbols::new(),
+            outlines: Outlines::new(),
             packages: Packages::new(),
             components: Vec::new(),
         }
@@ -200,6 +203,9 @@ impl Library {
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
         let config = Config::from_yaml(yaml)?;
+        if config.contains("package.outline") {
+            dbg!(config.get_str("package.outline")?);
+        }
         let component = Component::from_config(&config, &self)?;
         debug!("component short digest: {}", component.digest_short());
         Ok(component)

@@ -1,0 +1,45 @@
+link: https://www.jedec.org/system/files/docs/MS-012G-02.pdf
+type: sop
+pitch: 1.27
+body:
+  size:
+    x: 3.9+-0.1
+    z: 1.25
+lead:
+  length: 0.835+-0.435
+  span: 6+-0.2
+  width: 0.31..0.51
+
+# Variations
+aa:
+  body-size-y: 4.9+-0.1
+  size-z: 1.75
+  lead-count: 8
+
+ab:
+  body-size-y: 8.65+-0.1
+  height: 1.75
+  lead-count: 14
+
+ac:
+  body-size-y: 9.9+-0.1
+  size-z: 1.75
+  lead-count: 16
+
+ba:
+  bodyLength: 4.9+-0.1
+  size-z: 1.7
+  lead-count: 8
+  tab-size: 1;1.5
+
+bb:
+  body-size-y: 8.65+-0.1
+  size-z: 1.7
+  lead-count: 14
+  tab-size: 1;1.5
+
+bc:
+  body-size-y: 9.9+-0.1
+  size-z: 1.7
+  lead-count: 16
+  tab-size: 1;1.5

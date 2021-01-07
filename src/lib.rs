@@ -20,6 +20,7 @@ mod component;
 mod error;
 mod generators;
 mod index;
+mod outlines;
 mod packages;
 mod pattern;
 mod pinout;

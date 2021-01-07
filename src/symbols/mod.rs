@@ -1,4 +1,5 @@
 mod capacitor;
+mod ic;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
@@ -8,6 +9,7 @@ use crate::error::*;
 use crate::symbol::Symbol;
 
 use capacitor::CapacitorSymbol;
+use ic::IcSymbol;
 
 pub trait SymbolHandler {
     fn draw(&self, comp_cfg: &Config, lib_cfg: &Config) -> Result<Symbol>;
@@ -29,6 +31,7 @@ impl Symbols {
     pub fn new() -> Symbols {
         let mut handlers: HashMap<&'static str, Box<dyn SymbolHandler>> = HashMap::new();
         handlers.insert("capacitor", Box::new(CapacitorSymbol::new()));
+        handlers.insert("ic", Box::new(IcSymbol::new()));
 
         Symbols { handlers }
     }

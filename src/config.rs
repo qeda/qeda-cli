@@ -60,6 +60,11 @@ impl Config {
         hex::encode(hasher.finish())
     }
 
+    /// Returns `true` if the `Config` contains a value for the specified key.
+    pub fn contains(&self, key: &str) -> bool {
+        self.get_element(key).is_ok()
+    }
+
     /// Creates a new file if it doesn't exist.
     pub fn create_if_missing(path: &str) -> Result<()> {
         if !Path::new(path).exists() {
@@ -102,16 +107,28 @@ impl Config {
 
     /// Returns a config element.
     pub fn get_element(&self, key: &str) -> Result<&Value> {
-        let keys: Vec<&str> = key.split('.').collect();
-        let mut element = &self.json[keys[0]];
-        for key in &keys[1..] {
-            element = &element[*key];
+        let pointer_key = key.replace(".", "/");
+        // Generate all possibles combinations with `-`s replaced with `/`s
+        let parts: Vec<_> = pointer_key.split('-').collect();
+        let n = 1 << (parts.len() - 1);
+        for i in 0..n {
+            let key = parts
+                .iter()
+                .skip(1)
+                .enumerate()
+                .fold(format!("/{}", parts[0]), |acc, v| {
+                    format!(
+                        "{}{}{}",
+                        acc,
+                        if i & (1 << v.0) > 0 { "/" } else { "-" },
+                        v.1
+                    )
+                });
+            if let Some(result) = self.json.pointer(&key) {
+                return Ok(result);
+            }
         }
-        if element.is_null() {
-            Err(QedaError::MissingElement(key.to_string()).into())
-        } else {
-            Ok(element)
-        }
+        Err(QedaError::MissingElement(key.to_string()).into())
     }
 
     /// Returns a `f64` config value.
@@ -195,7 +212,7 @@ impl Config {
                 Ok(Range(f, f))
             }
             Value::String(s) => {
-                let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/-)\s*(\d+\.*\d*)").unwrap();
+                let re = Regex::new(r"(\d+\.*\d*)\s*(\.\.|\+/?-)\s*(\d+\.*\d*)").unwrap();
                 let caps = re.captures(s).ok_or_else(|| {
                     QedaError::InvalidElementType(key.to_string(), "range: f64..f64 or f64 +/- f64")
                 })?;
@@ -203,7 +220,7 @@ impl Config {
                 let f2 = caps[3].parse::<f64>()?;
                 match &caps[2] {
                     ".." => Ok(Range(f1, f2)),
-                    "+/-" => Ok(Range(f1 - f2, f1 + f2)),
+                    "+/-" | "+-" => Ok(Range(f1 - f2, f1 + f2)),
                     _ => Err(QedaError::InvalidElementType(
                         key.to_string(),
                         "range: f64..f64 or f64 +/- f64",
@@ -455,6 +472,12 @@ mod tests {
             A:
               B:
                 C: 1
+            D-E:
+              F-G: 2
+              H: 3
+              I:
+                J: 4
+
             ",
         )
         .unwrap();
@@ -462,9 +485,16 @@ mod tests {
         assert!(config.get_element("A.B.C").is_ok());
         assert!(config.get_element("A.B.D").is_err());
         assert!(config.get_element("B").is_err());
+        assert!(config.get_element("D-E-F-G").is_ok());
+        assert!(config.get_element("D-E-H").is_ok());
+        assert!(config.get_element("D-E-I-J").is_ok());
+
         assert_eq!(config.get_i64("A.B.C").unwrap(), 1);
         assert_eq!(config.get_u64("A.B.C").unwrap(), 1);
         assert_eq!(config.get_f64("A.B.C").unwrap(), 1.0);
+        assert_eq!(config.get_u64("D-E-F-G").unwrap(), 2);
+        assert_eq!(config.get_u64("D-E-H").unwrap(), 3);
+        assert_eq!(config.get_u64("D-E-I-J").unwrap(), 4);
     }
 
     #[test]
@@ -478,6 +508,7 @@ mod tests {
         E: 5 +/- 1.1
         F: [1, 2]
         G: [2.25, 6.5]
+        H: 8+-2.1
         ",
         )?;
 
@@ -488,6 +519,7 @@ mod tests {
         assert_eq!(config.get_range("E")?, Range(3.9, 6.1));
         assert_eq!(config.get_range("F")?, Range(1.0, 2.0));
         assert_eq!(config.get_range("G")?, Range(2.25, 6.5));
+        assert_eq!(config.get_range("H")?, Range(5.9, 10.1));
         Ok(())
     }
 

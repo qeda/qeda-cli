@@ -12,4 +12,5 @@ fi
 
 QEDA_DEBUG=1 ../target/debug/qeda reset
 QEDA_DEBUG=1 ../target/debug/qeda add capacitor/c0603
+QEDA_DEBUG=1 ../target/debug/qeda add ti/tps54560
 QEDA_DEBUG=1 ../target/debug/qeda generate test

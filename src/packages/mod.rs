@@ -1,4 +1,5 @@
 mod chip;
+mod sop;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
@@ -8,11 +9,13 @@ use crate::drawing::Drawing;
 use crate::error::*;
 
 use chip::ChipPackage;
+use sop::SopPackage;
 
 #[derive(Debug)]
 pub enum PackageType {
     Unknown,
     Chip,
+    // TODO: Add GullWing
 }
 
 impl Default for PackageType {
@@ -43,6 +46,7 @@ impl Packages {
     pub fn new() -> Self {
         let mut handlers: HashMap<&'static str, Box<dyn PackageHandler>> = HashMap::new();
         handlers.insert("chip", Box::new(ChipPackage::new()));
+        handlers.insert("sop", Box::new(SopPackage::new()));
 
         Packages { handlers }
     }

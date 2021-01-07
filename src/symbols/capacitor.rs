@@ -9,8 +9,8 @@ use super::SymbolHandler;
 pub struct CapacitorSymbol {}
 
 impl CapacitorSymbol {
-    pub fn new() -> CapacitorSymbol {
-        CapacitorSymbol {}
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
