@@ -53,6 +53,11 @@ impl Config {
         }
     }
 
+    /// Tries to return internal JSON as an object.
+    pub fn as_object(&self) -> Option<&Map<String, Value>> {
+        self.json.as_object()
+    }
+
     /// Calculates the `Config` digest (a.k.a. fingerprint).
     pub fn calc_digest(&self) -> String {
         let mut hasher = Hasher::new(Algorithm::SHA256);
@@ -318,8 +323,15 @@ impl Config {
         result
     }
 
-    /// Merges the `Config`with another.
-    pub fn merge(mut self, with: &Config) -> Self {
+    /// Merges the `Config`'s object addressed by the `key` with a JSON value.
+    pub fn merge_with_value(&mut self, key: &str, with: &Value) {
+        if let Some(value) = self.json.get_mut(key) {
+            Self::merge_objects(value, &with);
+        }
+    }
+
+    /// Merges the `Config` with another and returns the merged one.
+    pub fn merged_with(mut self, with: &Config) -> Self {
         Self::merge_objects(&mut self.json, &with.json);
         self
     }

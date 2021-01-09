@@ -180,7 +180,7 @@ fn configure(m: &ArgMatches) -> Result<()> {
         Config::from_yaml_file(QEDA_YML)?
     };
 
-    let lib_cfg = load_config!("qeda.yml").merge(&config);
+    let lib_cfg = load_config!("qeda.yml").merged_with(&config);
     if m.is_present("list") {
         let params = lib_cfg.keys();
         let _: Vec<_> = params.into_iter().map(|s| println!("{}", s)).collect();
@@ -246,7 +246,7 @@ async fn update(m: &ArgMatches) -> Result<()> {
     } else {
         Config::from_yaml_file(QEDA_YML)?
     };
-    let lib_cfg = load_config!("qeda.yml").merge(&config);
+    let lib_cfg = load_config!("qeda.yml").merged_with(&config);
     index::update(m.is_present("force"), &lib_cfg).await
 }
 

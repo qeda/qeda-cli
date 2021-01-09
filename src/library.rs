@@ -3,6 +3,8 @@ use std::path::Path;
 use std::str;
 use std::time::Duration;
 
+use regex::Regex;
+
 use crate::component::Component;
 use crate::config::Config;
 use crate::error::*;
@@ -63,7 +65,7 @@ impl Library {
     /// assert_eq!(lib.components.len(), 1);
     /// ```
     pub async fn from_config(config: &Config) -> Result<Self> {
-        let mut lib = Library::new().merge_config(config);
+        let mut lib = Library::new().merged_with_config(config);
         let components_hash = config.get_object("components")?;
         let keys = components_hash.keys();
         for key in keys {
@@ -194,17 +196,29 @@ impl Library {
     }
 
     // Merge the own config with the specified one
-    fn merge_config(mut self, config: &Config) -> Self {
-        self.config = self.config.merge(config);
+    fn merged_with_config(mut self, config: &Config) -> Self {
+        self.config = self.config.merged_with(config);
         self
     }
 
     // Parse component's YAML description
     fn parse_component(&self, id: &str, yaml: &str) -> Result<Component> {
         info!("parsing component '{}'", id);
-        let config = Config::from_yaml(yaml)?;
+        let mut config = Config::from_yaml(yaml)?;
         if config.contains("package.outline") {
-            dbg!(config.get_str("package.outline")?);
+            let path = config.get_string("package.outline")?;
+            let parts: Vec<_> = path.split('@').collect();
+            let variation = if parts.len() > 1 { parts[1] } else { "" };
+
+            if let Some(outline) = self.outlines.get(parts[0]) {
+                let object = outline.as_object().unwrap();
+                for (k, v) in object {
+                    let re = Regex::new(&format!("^{}$", &k)).unwrap();
+                    if variation.is_empty() || re.is_match(&variation.to_lowercase()) {
+                        config.merge_with_value("package", &v);
+                    }
+                }
+            }
         }
         let component = Component::from_config(&config, &self)?;
         debug!("component short digest: {}", component.digest_short());
